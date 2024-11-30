@@ -1,4 +1,4 @@
-# cee
+# C==
 C==, a C-style language.
 
 ### Why is it called C==?
