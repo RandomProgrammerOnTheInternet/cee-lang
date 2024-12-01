@@ -274,7 +274,7 @@ token_t *tokenize(char *str) {
             else if(strcmp(substring, "typeof") == 0) {
                 tokens = token_push_back(tokens, cee_typeof, substring, token_amount);
             }
-            else if(strcmp(substring, "typeof_unequal") == 0) {
+            else if(strcmp(substring, "typeof_unqual") == 0) {
                 tokens = token_push_back(tokens, cee_typeof_unqual, substring, token_amount);
             }
             else if(strcmp(substring, "_BitInt") == 0) {
