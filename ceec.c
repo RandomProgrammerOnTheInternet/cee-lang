@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 typedef enum {
-    cee_int_literal,
+    cee_int_literal = 0,
     cee_semicolon,
     cee_auto,
     cee_break,
@@ -59,8 +59,69 @@ typedef enum {
     cee__BitInt,
     cee__Decimal32,
     cee__Decimal64,
-    cee__Decimal128
+    cee__Decimal128,
+
+    cee_keyword_count
 } token_type;
+
+const char *keyword_table[] = {
+    NULL, // cee_int_literal
+    NULL, // cee_semicolon
+    "auto",
+    "break",
+    "case",
+    "char",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extern",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "int",
+    "long",
+    "register",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "union",
+    "unsigned",
+    "void",
+    "volatile",
+    "while",
+    "inline",
+    "restrict",
+    "_Complex",
+    "_Imaginary",
+    "_Atomic",
+    "_Generic",
+    "_Noreturn",
+    "_Alignas",
+    "_Alignof",
+    "_Bool",
+    "constexpr",
+    "false",
+    "nullptr",
+    "_Static_assert",
+    "_Thread_local",
+    "true",
+    "typeof",
+    "typeof_unqual",
+    "_BitInt",
+    "_Decimal32",
+    "_Decimal64",
+    "_Decimal128",
+};
 
 typedef struct {
     token_type type;
@@ -127,173 +188,31 @@ token_t *tokenize(char *str) {
             char *substring = (char *)malloc(length);
             memcpy(substring, buffer + pos, length);
             i--;
-            if(strcmp(substring, "auto") == 0) {
-                tokens = token_push_back(tokens, cee_auto, substring, token_amount);
+            
+            int found = 0;
+            for(int i = 0; i < cee_keyword_count; i++) {
+                if(keyword_table[i]) {
+                    if(strcmp(substring, keyword_table[i]) == 0) {
+                        found = 1;
+                        tokens = token_push_back(tokens, i, substring, token_amount);
+                    } else if(keyword_table[i][0] == '_') {
+                        char *modified = strdup(keyword_table[i]);
+                        modified++;
+                        modified[0] = tolower(modified[0]);
+                        if(strcmp(substring, modified) == 0) {
+                            found = 1;
+                            tokens = token_push_back(tokens, i, substring, token_amount);
+                        }
+                        modified--;
+                        free(modified);
+                    }
+                }
             }
-            else if(strcmp(substring, "break") == 0) {
-                tokens = token_push_back(tokens, cee_break, substring, token_amount);
+            if(!found) {
+                printf("skill issue: haram syntax detected: %s\n",substring);
+                exit(EXIT_FAILURE);
             }
-            else if(strcmp(substring, "case") == 0) {
-                tokens = token_push_back(tokens, cee_case, substring, token_amount);
-            }
-            else if(strcmp(substring, "char") == 0) {
-                tokens = token_push_back(tokens, cee_char, substring, token_amount);
-            }
-            else if(strcmp(substring, "const") == 0) {
-                tokens = token_push_back(tokens, cee_const, substring, token_amount);
-            }
-            else if(strcmp(substring, "continue") == 0) {
-                tokens = token_push_back(tokens, cee_continue, substring, token_amount);
-            }
-            else if(strcmp(substring, "default") == 0) {
-                tokens = token_push_back(tokens, cee_default, substring, token_amount);
-            }
-            else if(strcmp(substring, "do") == 0) {
-                tokens = token_push_back(tokens, cee_do, substring, token_amount);
-            }
-            else if(strcmp(substring, "double") == 0) {
-                tokens = token_push_back(tokens, cee_double, substring, token_amount);
-            }
-            else if(strcmp(substring, "else") == 0) {
-                tokens = token_push_back(tokens, cee_else, substring, token_amount);
-            }
-            else if(strcmp(substring, "enum") == 0) {
-                tokens = token_push_back(tokens, cee_enum, substring, token_amount);
-            }
-            else if(strcmp(substring, "extern") == 0) {
-                tokens = token_push_back(tokens, cee_extern, substring, token_amount);
-            }
-            else if(strcmp(substring, "float") == 0) {
-                tokens = token_push_back(tokens, cee_float, substring, token_amount);
-            }
-            else if(strcmp(substring, "for") == 0) {
-                tokens = token_push_back(tokens, cee_for, substring, token_amount);
-            }
-            else if(strcmp(substring, "goto") == 0) {
-                tokens = token_push_back(tokens, cee_goto, substring, token_amount);
-            }
-            else if(strcmp(substring, "if") == 0) {
-                tokens = token_push_back(tokens, cee_if, substring, token_amount);
-            }
-            else if(strcmp(substring, "int") == 0) {
-                tokens = token_push_back(tokens, cee_int, substring, token_amount);
-            }
-            else if(strcmp(substring, "long") == 0) {
-                tokens = token_push_back(tokens, cee_long, substring, token_amount);
-            }
-            else if(strcmp(substring, "register") == 0) {
-                tokens = token_push_back(tokens, cee_register, substring, token_amount);
-            }
-            else if(strcmp(substring, "return") == 0) {
-                tokens = token_push_back(tokens, cee_return, substring, token_amount);
-            }
-            else if(strcmp(substring, "short") == 0) {
-                tokens = token_push_back(tokens, cee_short, substring, token_amount);
-            }
-            else if(strcmp(substring, "signed") == 0) {
-                tokens = token_push_back(tokens, cee_signed, substring, token_amount);
-            }
-            else if(strcmp(substring, "sizeof") == 0) {
-                tokens = token_push_back(tokens, cee_sizeof, substring, token_amount);
-            }
-            else if(strcmp(substring, "static") == 0) {
-                tokens = token_push_back(tokens, cee_static, substring, token_amount);
-            }
-            else if(strcmp(substring, "struct") == 0) {
-                tokens = token_push_back(tokens, cee_struct, substring, token_amount);
-            }
-            else if(strcmp(substring, "switch") == 0) {
-                tokens = token_push_back(tokens, cee_switch, substring, token_amount);
-            }
-            else if(strcmp(substring, "typedef") == 0) {
-                tokens = token_push_back(tokens, cee_typedef, substring, token_amount);
-            }
-            else if(strcmp(substring, "union") == 0) {
-                tokens = token_push_back(tokens, cee_union, substring, token_amount);
-            }
-            else if(strcmp(substring, "unsigned") == 0) {
-                tokens = token_push_back(tokens, cee_unsigned, substring, token_amount);
-            }
-            else if(strcmp(substring, "void") == 0) {
-                tokens = token_push_back(tokens, cee_void, substring, token_amount);
-            }
-            else if(strcmp(substring, "volatile") == 0) {
-                tokens = token_push_back(tokens, cee_volatile, substring, token_amount);
-            }
-            else if(strcmp(substring, "while") == 0) {
-                tokens = token_push_back(tokens, cee_while, substring, token_amount);
-            }
-            else if(strcmp(substring, "inline") == 0) {
-                tokens = token_push_back(tokens, cee_inline, substring, token_amount);
-            }
-            else if(strcmp(substring, "restrict") == 0) {
-                tokens = token_push_back(tokens, cee_restrict, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Bool") == 0 || strcmp(substring, "bool") == 0) {
-                tokens = token_push_back(tokens, cee_bool, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Complex") == 0) {
-                tokens = token_push_back(tokens, cee__Complex, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Imaginary") == 0) {
-                tokens = token_push_back(tokens, cee__Imaginary, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Alignas") == 0 || strcmp(substring, "alignas") == 0) {
-                tokens = token_push_back(tokens, cee_alignas, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Alignof") == 0 || strcmp(substring, "alignof") == 0) {
-                tokens = token_push_back(tokens, cee_alignof, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Atomic") == 0) {
-                tokens = token_push_back(tokens, cee__Atomic, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Generic") == 0) {
-                tokens = token_push_back(tokens, cee__Generic, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Noreturn") == 0) {
-                tokens = token_push_back(tokens, cee__Noreturn, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Static_assert") == 0 || strcmp(substring, "static_assert") == 0) {
-                tokens = token_push_back(tokens, cee_static_assert, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Thread_local") == 0 || strcmp(substring, "thread_local") == 0) {
-                tokens = token_push_back(tokens, cee_thread_local, substring, token_amount);
-            }
-            else if(strcmp(substring, "constexpr") == 0) {
-                tokens = token_push_back(tokens, cee_constexpr, substring, token_amount);
-            }
-            else if(strcmp(substring, "false") == 0) {
-                tokens = token_push_back(tokens, cee_false, substring, token_amount);
-            }
-            else if(strcmp(substring, "nullptr") == 0) {
-                tokens = token_push_back(tokens, cee_nullptr, substring, token_amount);
-            }
-            else if(strcmp(substring, "true") == 0) {
-                tokens = token_push_back(tokens, cee_true, substring, token_amount);
-            }
-            else if(strcmp(substring, "typeof") == 0) {
-                tokens = token_push_back(tokens, cee_typeof, substring, token_amount);
-            }
-            else if(strcmp(substring, "typeof_unequal") == 0) {
-                tokens = token_push_back(tokens, cee_typeof_unqual, substring, token_amount);
-            }
-            else if(strcmp(substring, "_BitInt") == 0) {
-                tokens = token_push_back(tokens, cee__BitInt, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Decimal32") == 0) {
-                tokens = token_push_back(tokens, cee__Decimal32, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Decimal64") == 0) {
-                tokens = token_push_back(tokens, cee__Decimal64, substring, token_amount);
-            }
-            else if(strcmp(substring, "_Decimal128") == 0) {
-                tokens = token_push_back(tokens, cee__Decimal128, substring, token_amount);
-            }
-            /* syntax error */
-            else {
-                printf("skill issue: haram syntax detected: %s\n", substring);
-                exit(1);
-            }
+            free(substring);
         }
         /* ignores whitespace */
         else if(isspace(str[i])) {
