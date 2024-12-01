@@ -185,7 +185,8 @@ token_t *tokenize(char *str) {
             /* increase number of tokens */
             token_amount++;
             /* test for keyword */
-            char *substring = (char *)malloc(length);
+            char *substring = (char *)malloc(length + 16);
+            memset(substring, 0, length + 16);
             memcpy(substring, buffer + pos, length);
             i--;
 
