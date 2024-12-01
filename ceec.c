@@ -137,7 +137,7 @@ int token_amount = 0;
 
 int main(int argc, char **argv) {
     if(argc == 1) {
-        printf("skill issue: you gotta put a file");
+        printf("skill issue: you gotta put a file\n");
         exit(1);
     }
     FILE *file = fopen(argv[1], "r");
