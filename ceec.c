@@ -188,6 +188,7 @@ token_t *tokenize(char *str) {
             char *substring = (char *)malloc(length);
             memcpy(substring, buffer + pos, length);
             i--;
+
             
             int found = 0;
             for(int i = 0; i < cee_keyword_count; i++) {
@@ -213,6 +214,7 @@ token_t *tokenize(char *str) {
                 exit(EXIT_FAILURE);
             }
             free(substring);
+
         }
         /* ignores whitespace */
         else if(isspace(str[i])) {
