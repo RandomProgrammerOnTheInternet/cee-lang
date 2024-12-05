@@ -6,6 +6,50 @@
 typedef enum {
     cee_int_literal = 0,
     cee_semicolon,
+    cee_open_curly_brace,
+    cee_closed_curly_brace,
+    cee_OP_plus,
+    cee_OP_minus,
+    cee_OP_asterisk,
+    cee_OP_slash,
+    cee_OP_percent,
+    cee_OP_assignment_equals,
+    cee_OP_assignment_add,
+    cee_OP_assignment_subtract,
+    cee_OP_assignment_multiply,
+    cee_OP_assignment_divide,
+    cee_OP_assignment_modulus,
+    cee_OP_assignment_bitwise_AND,
+    cee_OP_assignment_bitwise_OR,
+    cee_OP_assignment_bitwise_XOR,
+    cee_OP_assignment_bitshift_left,
+    cee_OP_assignment_bitshift_right,
+    cee_OP_bitwise_NOT,
+    cee_OP_ampersand,
+    cee_OP_bitwise_OR,
+    cee_OP_bitwise_XOR,
+    cee_OP_bitshift_left,
+    cee_OP_bitshift_right,
+    cee_OP_boolean_NOT,
+    cee_OP_boolean_AND,
+    cee_OP_boolean_OR,
+    cee_OP_ternary_question_mark,
+    cee_OP_ternary_colon,
+    cee_OP_equals,
+    cee_OP_NOT_equals,
+    cee_OP_open_parentheses,
+    cee_OP_closed_parentheses,
+    cee_OP_increment,
+    cee_OP_decrement,
+    cee_OP_member_select,
+    cee_OP_pointer_member_select,
+    cee_OP_less_than,
+    cee_OP_less_than_equal_to,
+    cee_OP_greater_than,
+    cee_OP_greater_than_equal_to,
+    cee_OP_open_bracket,
+    cee_OP_closed_bracket,
+    cee_OP_comma,
     cee_auto,
     cee_break,
     cee_case,
@@ -67,6 +111,49 @@ typedef enum {
 const char *keyword_table[] = {
     NULL, // cee_int_literal
     NULL, // cee_semicolon
+    NULL, // cee_open_curly_brace
+    NULL, // cee_closed_curly_brace
+    NULL, // cee_OP_plus
+    NULL, // cee_OP_minus
+    NULL, // cee_OP_asterisk
+    NULL, // cee_OP_percent
+    NULL, // cee_OP_assignment_equals
+    NULL, // cee_OP_assignment_add
+    NULL, // cee_OP_assignment_subtract
+    NULL, // cee_OP_assignment_multiply
+    NULL, // cee_OP_assignment_divide
+    NULL, // cee_OP_assignment_modulus
+    NULL, // cee_OP_assignment_bitwise_AND
+    NULL, // cee_OP_assignment_bitwise_OR
+    NULL, // cee_OP_assignment_bitwise_XOR
+    NULL, // cee_OP_assignment_bitshift_left
+    NULL, // cee_OP_assignment_bitshift_right
+    NULL, // cee_OP_bitwise_NOT
+    NULL, // cee_OP_ampersand
+    NULL, // cee_OP_bitwise_OR
+    NULL, // cee_OP_bitwise_XOR
+    NULL, // cee_OP_bitshift_left
+    NULL, // cee_OP_bitshift_right
+    NULL, // cee_OP_boolean_NOT
+    NULL, // cee_OP_boolean_AND
+    NULL, // cee_OP_boolean_OR
+    NULL, // cee_OP_ternary_question_mark
+    NULL, // cee_OP_ternary_colon
+    NULL, // cee_OP_equals
+    NULL, // cee_OP_NOT_equals
+    NULL, // cee_OP_open_parentheses
+    NULL, // cee_OP_closed_parentheses
+    NULL, // cee_OP_increment
+    NULL, // cee_OP_decrement
+    NULL, // cee_OP_member_select
+    NULL, // cee_OP_pointer_member_select
+    NULL, // cee_OP_less_than
+    NULL, // cee_OP_less_than_equal_to
+    NULL, // cee_OP_greater_than
+    NULL, // cee_OP_greater_than_equal_to
+    NULL, // cee_OP_open_bracket
+    NULL, // cee_OP_closed_bracket
+    NULL, // cee_OP_comma
     "auto",
     "break",
     "case",
@@ -149,6 +236,8 @@ int main(int argc, char **argv) {
     for(int i = 0; i < token_amount; i++) {
         free(tokens[i].value);
     }
+    free(tokens);
+    free(str);
 
     return 0;
 }
@@ -189,15 +278,14 @@ token_t *tokenize(char *str) {
             memset(substring, 0, length + 16);
             memcpy(substring, buffer + pos, length);
             i--;
-
-            
             int found = 0;
-            for(int i = 0; i < cee_keyword_count; i++) {
+            for(int i = 0; i < cee_keyword_count - 1; i++) {
                 if(keyword_table[i]) {
                     if(strcmp(substring, keyword_table[i]) == 0) {
                         found = 1;
                         tokens = token_push_back(tokens, i, substring, token_amount);
-                    } else if(keyword_table[i][0] == '_') {
+                    }
+                    else if(keyword_table[i][0] == '_') {
                         char *modified = strdup(keyword_table[i]);
                         modified++;
                         modified[0] = tolower(modified[0]);
@@ -223,7 +311,7 @@ token_t *tokenize(char *str) {
         }
         /* numbers */
         else if(isdigit(str[i])) {
-            buffer = char_push_back(buffer, str[i], i + 1);
+            buffer = char_push_back(buffer, str[i], i + 2);
             int pos = i;
             int num_length = 1;
             i++;
@@ -252,6 +340,233 @@ token_t *tokenize(char *str) {
             buffer = char_push_back(buffer, str[i], i + 1);
             token_amount++;
             tokens = token_push_back(tokens, cee_semicolon, ";", token_amount);
+        }
+        /* curly braces */
+        else if(str[i] == '{') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_open_curly_brace, "{", token_amount);
+        }
+        else if(str[i] == '}') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_closed_curly_brace, "}", token_amount);
+        }
+        /* operators */
+        else if(str[i] == '+') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_plus, "+", token_amount);
+        }
+        else if(str[i] == '-') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_minus, "-", token_amount);
+        }
+        else if(str[i] == '*') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_asterisk, "*", token_amount);
+        }
+        else if(str[i] == '/') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_slash, "/", token_amount);
+        }
+        else if(str[i] == '%') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_percent, "%", token_amount);
+        }
+        else if(str[i] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_equals, "=", token_amount);
+        }
+        /*else if(str[i] == '') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_pushback(cee_OP_, "", token_amount);
+        }*/
+        else if(str[i] == '+' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_add, "+=", token_amount);
+        }
+        else if(str[i] == '-' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_subtract, "-=", token_amount);
+        }
+        else if(str[i] == '*' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_multiply, "*=", token_amount);
+        }
+        else if(str[i] == '/' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_divide, "/=", token_amount);
+        }
+        else if(str[i] == '%' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_modulus, "%=", token_amount);
+        }
+        else if(str[i] == '&' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_bitwise_AND, "&=", token_amount);
+        }
+        else if(str[i] == '|' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_bitwise_OR, "|=", token_amount);
+        }
+        else if(str[i] == '^' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_bitwise_XOR, "^=", token_amount);
+        }
+        else if(str[i] == '<' && str[i + 1] == '<' && str[i + 2] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 3);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_bitshift_left, "<<=", token_amount);
+        }
+        else if(str[i] == '>' && str[i + 1] == '>' && str[i + 2] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 3);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_assignment_bitshift_right, ">>=", token_amount);
+        }
+        else if(str[i] == '~') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_bitwise_NOT, "~", token_amount);
+        }
+        else if(str[i] == '&') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_ampersand, "&", token_amount);
+        }
+        else if(str[i] == '|') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_bitwise_OR, "|", token_amount);
+        }
+        else if(str[i] == '^') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_bitwise_XOR, "^", token_amount);
+        }
+        else if(str[i] == '<' && str[i + 1] == '<') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_bitshift_left, "<<", token_amount);
+        }
+        else if(str[i] == '>' && str[i + 1] == '>') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_bitshift_right, ">>", token_amount);
+        }
+        else if(str[i] == '!') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_boolean_NOT, "!", token_amount);
+        }
+        else if(str[i] == '&' && str[i + 1] == '&') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_boolean_AND, "&&", token_amount);
+        }
+        else if(str[i] == '|' && str[i + 1] == '|') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_boolean_OR, "||", token_amount);
+        }
+        else if(str[i] == '?') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_ternary_question_mark, "?", token_amount);
+        }
+        else if(str[i] == ':') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_ternary_colon, ":", token_amount);
+        }
+        else if(str[i] == '=' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_equals, "==", token_amount);
+        }
+        else if(str[i] == '!' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_NOT_equals, "!=", token_amount);
+        }
+        else if(str[i] == '(') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_open_parentheses, "(", token_amount);
+        }
+        else if(str[i] == ')') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_closed_parentheses, ")", token_amount);
+        }
+        else if(str[i] == '+' && str[i + 1] == '+') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_increment, "++", token_amount);
+        }
+        else if(str[i] == '-' && str[i + 1] == '-') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_decrement, "--", token_amount);
+        }
+        else if(str[i] == '.') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_member_select, ".", token_amount);
+        }
+        else if(str[i] == '-' && str[i + 1] == '>') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_pointer_member_select, "->", token_amount);
+        }
+        else if(str[i] == '<') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_less_than, "<", token_amount);
+        }
+        else if(str[i] == '<' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_less_than_equal_to, "<=", token_amount);
+        }
+        else if(str[i] == '>') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_greater_than, ">", token_amount);
+        }
+        else if(str[i] == '>' && str[i + 1] == '=') {
+            buffer = char_push_back(buffer, str[i], i + 2);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_greater_than_equal_to, ">=", token_amount);
+        }
+        else if(str[i] == '[') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_open_bracket, "[", token_amount);
+        }
+        else if(str[i] == ']') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_closed_bracket, "]", token_amount);
+        }
+        else if(str[i] == ',') {
+            buffer = char_push_back(buffer, str[i], i + 1);
+            token_amount++;
+            tokens = token_push_back(tokens, cee_OP_comma, ",", token_amount);
         }
         /* syntax error */
         else {
