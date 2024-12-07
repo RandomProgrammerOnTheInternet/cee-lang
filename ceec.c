@@ -299,7 +299,7 @@ token_t *tokenize(char *str) {
                 }
             }
             if(!found) {
-                printf("skill issue: haram syntax detected: %s\n",substring);
+                printf("skill issue: haram syntax detected: %s\n", substring);
                 exit(EXIT_FAILURE);
             }
             free(substring);
@@ -311,7 +311,7 @@ token_t *tokenize(char *str) {
         }
         /* numbers */
         else if(isdigit(str[i])) {
-            buffer = char_push_back(buffer, str[i], i + 2);
+            buffer = char_push_back(buffer, str[i], i + 1);
             int pos = i;
             int num_length = 1;
             i++;
@@ -323,9 +323,10 @@ token_t *tokenize(char *str) {
             i--;
             token_amount++;
             char *substring = (char *)malloc(num_length + 1);
-            memcpy(substring, buffer + pos, num_length + 1);
+            memcpy(substring, buffer + pos, num_length);
             substring[num_length] = '\0';
             tokens = token_push_back(tokens, cee_int_literal, substring, token_amount);
+            free(substring); 
         }
         /* single line comments */
         else if(str[i] == '/' && str[i + 1] == '/') {
