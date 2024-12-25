@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -284,6 +283,7 @@ int main(int argc, char **argv) {
     token_t *tokens = tokenize(str);
     node_t *nodes = parse(tokens);
     FILE *output = generate(nodes);
+    fclose(output);
     system("nasm -felf64 out.asm");
     system("ld -o a.out out.o");
     for(int i = 0; i < token_amount; i++) {
@@ -302,7 +302,6 @@ int main(int argc, char **argv) {
     free(tokens);
     free(str);
     free(nodes);
-    fclose(output);
     fclose(file);
 
     return 0;
