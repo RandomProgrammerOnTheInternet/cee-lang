@@ -7,3 +7,7 @@ Uh, there's C++, and there's C#, which is C++++, since # is like 4 plusses. So, 
 Runs on x86/64 Linux. Requires GNU ld and nasm.
 
 Currently very barebones.
+
+### Usage
+```ceec <file_name>
+./a.out```
