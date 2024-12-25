@@ -1,0 +1,4 @@
+* linguist-vendored
+*.c linguist-vendored=false
+Makefile linguist-vendored=false
+*.cee linguist-vendored=false
