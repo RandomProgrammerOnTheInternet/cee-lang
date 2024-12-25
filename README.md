@@ -9,5 +9,7 @@ Runs on x86/64 Linux. Requires GNU ld and nasm.
 Currently very barebones.
 
 ### Usage
-```ceec <file_name>
-./a.out```
+```
+ceec <file_name>
+./a.out
+```
