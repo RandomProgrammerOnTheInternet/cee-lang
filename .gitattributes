@@ -1,3 +1,2 @@
-* linguist-vendored
-*.c linguist-vendored=false
-*.cee linguist-vendored=false
+* linguist-language
+*.cee linguist-language=C==
