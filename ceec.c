@@ -723,7 +723,7 @@ node_t *parse(token_t *tokens) {
 FILE *generate(node_t *nodes) {
     FILE *f = fopen("out.asm", "w+");
     fprintf(f, "global _start\n");
-    fprintf(f, "start:\n");
+    fprintf(f, "_start:\n");
     for(int i = 0; i < node_amount; i++) {
         if(nodes[i].tag == tag_return) {
             fprintf(f, "    mov rax, 60\n");
