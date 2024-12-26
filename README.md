@@ -10,6 +10,6 @@ Currently very barebones.
 
 ### Usage
 ```
-ceec <file_name>
+./ceec <file_name>
 ./a.out
 ```
