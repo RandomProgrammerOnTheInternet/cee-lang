@@ -28,8 +28,8 @@ int main(int argc, char **argv) {
     //node_t *nodes = parse(tokens);
     //FILE *output = generate(nodes);
     //fclose(output);
-    system("nasm -felf64 out.asm");
-    system("ld -o a.out out.o");
+    //system("nasm -felf64 out.asm");
+    //system("ld -o a.out out.o");
     for(int i = 0; i < token_amount; i++) {
         printf("Token %d: ", i);
         printf("%s\n", tokens[i].value);
