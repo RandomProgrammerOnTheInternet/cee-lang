@@ -112,7 +112,7 @@ typedef enum token_type {
     cee_keyword_count
 } token_type;
 
-const char *keyword_table[] = {
+static const char *keyword_table[] = {
     NULL, // cee_int_literal
     NULL, // cee_semicolon
     NULL, // cee_identifier
