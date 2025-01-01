@@ -6,9 +6,9 @@ CCFLAGS += -std=gnu2x
 CCFLAGS += -fsanitize=undefined,address,leak
 CCFLAGS += -g
 CCFLAGS += -O0
-LDFLAGS += -Wall
+CCFLAGS += -Wall
 LDFLAGS += -lm
-SRC = $(wildcard *.c)
+SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 
 all: build
