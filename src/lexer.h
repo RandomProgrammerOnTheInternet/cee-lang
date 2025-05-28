@@ -1,229 +1,327 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "ds.h"
+#define UTIL_IMPL
 #include "util.h"
 
 typedef enum token_type {
-    cee_int_literal = 0,
-    cee_semicolon,
-    cee_identifier,
-    cee_left_curly_brace,
-    cee_right_curly_brace,
-    cee_OP_plus,
-    cee_OP_minus,
-    cee_OP_asterisk,
-    cee_OP_slash,
-    cee_OP_percent,
-    cee_OP_assignment_equals,
-    cee_OP_assignment_add,
-    cee_OP_assignment_subtract,
-    cee_OP_assignment_multiply,
-    cee_OP_assignment_divide,
-    cee_OP_assignment_modulus,
-    cee_OP_assignment_bitwise_AND,
-    cee_OP_assignment_bitwise_OR,
-    cee_OP_assignment_bitwise_XOR,
-    cee_OP_assignment_bitshift_left,
-    cee_OP_assignment_bitshift_right,
-    cee_OP_bitwise_NOT,
-    cee_OP_ampersand,
-    cee_OP_bitwise_OR,
-    cee_OP_bitwise_XOR,
-    cee_OP_bitshift_left,
-    cee_OP_bitshift_right,
-    cee_OP_boolean_NOT,
-    cee_OP_boolean_AND,
-    cee_OP_boolean_OR,
-    cee_OP_question_mark,
-    cee_OP_colon,
-    cee_OP_equals,
-    cee_OP_NOT_equals,
-    cee_OP_left_parentheses,
-    cee_OP_right_parentheses,
-    cee_OP_increment,
-    cee_OP_decrement,
-    cee_OP_member_select,
-    cee_OP_pointer_member_select,
-    cee_OP_less_than,
-    cee_OP_less_than_equal_to,
-    cee_OP_greater_than,
-    cee_OP_greater_than_equal_to,
-    cee_OP_left_bracket,
-    cee_OP_right_bracket,
-    cee_OP_comma,
-    cee_auto,
-    cee_break,
-    cee_case,
-    cee_char,
-    cee_const,
-    cee_continue,
-    cee_default,
-    cee_do,
-    cee_double,
-    cee_else,
-    cee_enum,
-    cee_extern,
-    cee_float,
-    cee_for,
-    cee_goto,
-    cee_if,
-    cee_int,
-    cee_long,
-    cee_register,
-    cee_return,
-    cee_short,
-    cee_signed,
-    cee_sizeof,
-    cee_static,
-    cee_struct,
-    cee_switch,
-    cee_typedef,
-    cee_union,
-    cee_unsigned,
-    cee_void,
-    cee_volatile,
-    cee_while,
-    cee_inline,
-    cee_restrict,
-    cee__Complex,
-    cee__Imaginary,
-    cee__Atomic,
-    cee__Generic,
-    cee__Noreturn,
-    cee_alignas,
-    cee_alignof,
-    cee_bool,
-    cee_constexpr,
-    cee_false,
-    cee_nullptr,
-    cee_static_assert,
-    cee_thread_local,
-    cee_true,
-    cee_typeof,
-    cee_typeof_unqual,
-    cee__BitInt,
-    cee__Decimal32,
-    cee__Decimal64,
-    cee__Decimal128,
+	token_keyword_auto = 0,
+	token_keyword_break,
+	token_keyword_case,
+	token_keyword_char,
+	token_keyword_const,
+	token_keyword_continue,
+	token_keyword_default,
+	token_keyword_do,
+	token_keyword_double,
+	token_keyword_else,
+	token_keyword_enum,
+	token_keyword_extern,
+	token_keyword_float,
+	token_keyword_for,
+	token_keyword_goto,
+	token_keyword_if,
+	token_keyword_int,
+	token_keyword_long,
+	token_keyword_register,
+	token_keyword_return,
+	token_keyword_short,
+	token_keyword_signed,
+	token_keyword_sizeof,
+	token_keyword_static,
+	token_keyword_struct,
+	token_keyword_switch,
+	token_keyword_typedef,
+	token_keyword_union,
+	token_keyword_unsigned,
+	token_keyword_void,
+	token_keyword_volatile,
+	token_keyword_while,
+	token_keyword_inline,
+	token_keyword_restrict,
+	token_keyword_bool,
+	token_keyword_complex,
+	token_keyword_alignas,
+	token_keyword_alignof,
+	token_keyword_atomic,
+	token_keyword_generic,
+	token_keyword_constexpr,
+	token_keyword_true,
+	token_keyword_false,
+	token_keyword_nullptr,
+	token_keyword_static_assert,
+	token_keyword_thread_local,
+	token_keyword_typeof,
+	token_keyword_typeof_unqual,
+	token_keyword_bitint,
+	token_keyword_decimal32,
+	token_keyword_decimal64,
+	token_keyword_decimal128,
+	token_identifier,
+	token_int_literal,
+	token_unsigned_int_literal,
+	token_long_literal,
+	token_unsigned_long_literal,
+	token_long_long_literal,
+	token_unsigned_long_long_literal,
+	token_float_literal,
+	token_double_literal,
+	token_char_literal,
+	token_string_literal,
+	token_op_plus,
+	token_op_minus,
+	token_op_asterisk,
+	token_op_slash,
+	token_op_percent,
+	token_op_equals,
+	token_op_plus_equals,
+	token_op_minus_equals,
+	token_op_asterisk_equals,
+	token_op_slash_equals,
+	token_op_bitwise_and_equals,
+	token_op_bitwise_or_equals,
+	token_op_bitwise_xor_equals,
+	token_op_bitshift_left_equals,
+	token_op_bitshift_right_equals,
+	token_op_bitwise_not,
+	token_op_bitwise_and,
+	token_op_bitwise_or,
+	token_op_bitwise_xor,
+	token_op_bitshift_left,
+	token_op_bitshift_right,
+	token_op_boolean_not,
+	token_op_boolean_and,
+	token_op_boolean_or,
+	token_op_question_mark,
+	token_op_colon,
+	token_op_equals_equals,
+	token_op_not_equals,
+	token_op_left_paren,
+	token_op_right_paren,
+	token_op_plus_plus,
+	token_op_minus_minus,
+	token_op_period,
+	token_op_arrow,
+	token_op_less_than,
+	token_op_less_than_equal_to,
+	token_op_greater_than,
+	token_op_greater_than_equal_to,
+	token_op_left_bracket,
+	token_op_right_bracket,
+	token_op_comma,
 
-    cee_keyword_count
+	token_type_count
 } token_type;
 
-static const char *keyword_table[] = {
-    NULL, // cee_int_literal
-    NULL, // cee_semicolon
-    NULL, // cee_identifier
-    NULL, // cee_left_curly_brace
-    NULL, // cee_right_curly_brace
-    NULL, // cee_OP_plus
-    NULL, // cee_OP_minus
-    NULL, // cee_OP_asterisk
-    NULL, // cee_OP_slash
-    NULL, // cee_OP_percent
-    NULL, // cee_OP_assignment_equals
-    NULL, // cee_OP_assignment_add
-    NULL, // cee_OP_assignment_subtract
-    NULL, // cee_OP_assignment_multiply
-    NULL, // cee_OP_assignment_divide
-    NULL, // cee_OP_assignment_modulus
-    NULL, // cee_OP_assignment_bitwise_AND
-    NULL, // cee_OP_assignment_bitwise_OR
-    NULL, // cee_OP_assignment_bitwise_XOR
-    NULL, // cee_OP_assignment_bitshift_left
-    NULL, // cee_OP_assignment_bitshift_right
-    NULL, // cee_OP_bitwise_NOT
-    NULL, // cee_OP_ampersand
-    NULL, // cee_OP_bitwise_OR
-    NULL, // cee_OP_bitwise_XOR
-    NULL, // cee_OP_bitshift_left
-    NULL, // cee_OP_bitshift_right
-    NULL, // cee_OP_boolean_NOT
-    NULL, // cee_OP_boolean_AND
-    NULL, // cee_OP_boolean_OR
-    NULL, // cee_OP_question_mark
-    NULL, // cee_OP_colon
-    NULL, // cee_OP_equals
-    NULL, // cee_OP_NOT_equals
-    NULL, // cee_OP_left_parentheses
-    NULL, // cee_OP_right_parentheses
-    NULL, // cee_OP_increment
-    NULL, // cee_OP_decrement
-    NULL, // cee_OP_member_select
-    NULL, // cee_OP_pointer_member_select
-    NULL, // cee_OP_less_than
-    NULL, // cee_OP_less_than_equal_to
-    NULL, // cee_OP_greater_than
-    NULL, // cee_OP_greater_than_equal_to
-    NULL, // cee_OP_left_bracket
-    NULL, // cee_OP_right_bracket
-    NULL, // cee_OP_comma
-    "auto",
-    "break",
-    "case",
-    "char",
-    "const",
-    "continue",
-    "default",
-    "do",
-    "double",
-    "else",
-    "enum",
-    "extern",
-    "float",
-    "for",
-    "goto",
-    "if",
-    "int",
-    "long",
-    "register",
-    "return",
-    "short",
-    "signed",
-    "sizeof",
-    "static",
-    "struct",
-    "switch",
-    "typedef",
-    "union",
-    "unsigned",
-    "void",
-    "volatile",
-    "while",
-    "inline",
-    "restrict",
-    "_Complex",
-    "_Imaginary",
-    "_Atomic",
-    "_Generic",
-    "_Noreturn",
-    "_Alignas",
-    "_Alignof",
-    "_Bool",
-    "constexpr",
-    "false",
-    "nullptr",
-    "_Static_assert",
-    "_Thread_local",
-    "true",
-    "typeof",
-    "typeof_unqual",
-    "_BitInt",
-    "_Decimal32",
-    "_Decimal64",
-    "_Decimal128",
+const char *token_table[] = {
+	"auto",
+	"break",
+	"case",
+	"char",
+	"const",
+	"continue",
+	"default",
+	"do",
+	"double",
+	"else",
+	"enum",
+	"extern",
+	"float",
+	"for",
+	"goto",
+	"if",
+	"int",
+	"long",
+	"register",
+	"return",
+	"short",
+	"signed",
+	"sizeof",
+	"static",
+	"struct",
+	"switch",
+	"typedef",
+	"union",
+	"unsigned",
+	"void",
+	"volatile",
+	"while",
+	"inline",
+	"restrict",
+	"bool",
+	"complex",
+	"alignas",
+	"alignof",
+	"atomic",
+	"generic",
+	"constexpr",
+	"true",
+	"false",
+	"nullptr",
+	"static_assert",
+	"thread_local",
+	"typeof",
+	"typeof_unqual",
+	"bitint",
+	"decimal32",
+	"decimal64",
+	"decimal128",
+	NULL, // token_identifier
+	NULL, // token_int_literal
+	NULL, // token_unsigned_int_literal
+	NULL, // token_long_literal
+	NULL, // token_unsigned_long_literal
+	NULL, // token_long_long_literal
+	NULL, // token_unsigned_long_long_literal
+	NULL, // token_float_literal
+	NULL, // token_double_literal
+	NULL, // token_char_literal
+	NULL, // token_string_literal
+	"+",
+	"-",
+	"*",
+	"/",
+	"%",
+	"=",
+	"+=",
+	"-=",
+	"*=",
+	"/=",
+	"&=",
+	"|=",
+	"^=",
+	"<<=",
+	">>=",
+	"~",
+	"&",
+	"|",
+	"^",
+	"<<",
+	">>",
+	"!",
+	"&&",
+	"||",
+	"?",
+	":",
+	"==",
+	"!=",
+	"(",
+	")",
+	"++",
+	"--",
+	".",
+	"->",
+	"<",
+	"<=",
+	">",
+	">=",
+	"[",
+	"]",
+	","
 };
 
-extern int token_amount;
-
-typedef struct {
-    token_type type;
-    char *value;
+typedef struct token_t {
+	token_type type;
+	char *value;
 } token_t;
 
-token_t *tokenize(char*);
-token_t *token_push_back(token_t*, token_type, char*, size_t);
+NEW_LIST(token_t);
+
+token_t tokenize_identifier(char *str, u64 start, u64 *i);
+token_t tokenize_int_literal(char *str, u64 start, u64 *i);
+//token_t tokenize_operator(char *str, u64 start, u64 *i);
+LIST(token_t) tokenize(char *str);
 
 #endif // LEXER_H
+
+#ifdef LEXER_IMPL
+
+token_t tokenize_identifier(char *str, u64 start, u64 *i) {
+	token_t token;
+	while(isalnum(str[*i]) || str[*i] == '_') {
+		// c operator precedence in a nutshell
+		++*i;
+	}
+	char *buffer = substr(str, start, *i);
+	printf("Buffer: %s\n", buffer);
+	for(int j = 0; j < token_type_count - 1; j++) {
+		printf("j: %d\n", j);
+		if(!token_table[j]) {
+			printf("loop broke\n");
+			break;
+		}
+		if(strcmp(buffer, token_table[j]) == 0) {
+			/*LIST_APPEND(tokens, ((token_t){
+				.type = j,
+				.value = buffer
+			}));i*/
+			token = (token_t) {
+				.type = j,
+				.value = buffer
+			};
+			goto found;
+		}
+	}
+	/*
+	LIST_APPEND(tokens, ((token_t) {
+		.type = token_identifier,
+		.value = buffer
+	}));*/
+	token = (token_t) {
+		.type = token_identifier,
+		.value = buffer
+	};
+found:
+	return token; 
+}
+
+token_t tokenize_int_literal(char *str, u64 start, u64 *i) {
+	while(isdigit(str[*i])) {
+		++*i;
+	}
+	return (token_t) {
+		.type = token_int_literal,
+		.value = substr(str, start, *i)
+	};
+}
+/*
+token_t tokenize_operator(char *str, u64 start, u64 *i) {
+	
+}
+*/
+LIST(token_t) tokenize(char *str) {
+	printf("Tokenize Arg: %s\n", str);
+	LIST(token_t) tokens;
+	INIT_LIST(tokens, 0);
+	for(u64 i = 0; str[i]; i++) {
+		printf("new loop\n");
+		// identifiers/keywords
+		if(isalpha(str[i]) || str[i] == '_') {
+			u64 start = i;
+			i++;
+			LIST_APPEND(tokens, tokenize_identifier(str, start, &i));
+		}
+		// whitespace
+		else if(isspace(str[i])) {
+			continue;
+		}
+		// integer literals
+		else if(isdigit(str[i])) {
+			u64 start = i;
+			i++;
+			LIST_APPEND(tokens, tokenize_int_literal(str, start, &i));
+		}
+		// operators
+		/*else {
+			u64 start = i;
+			i++;
+			LIST_APPEND(tokens, tokenize_operator(str, start &i));
+		}*/
+	}
+	return tokens;
+}
+
+#endif // LEXER_IMPL
