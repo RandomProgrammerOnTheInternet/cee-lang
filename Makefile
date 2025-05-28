@@ -2,8 +2,7 @@ CC = clang
 CCFLAGS =
 LDFLAGS =
 INCFLAGS = -iquotesrc -I.
-CCFLAGS += -std=gnu2x
-CCFLAGS += -fsanitize=undefined,address,leak
+CCFLAGS += -std=c23
 CCFLAGS += -g
 CCFLAGS += -O0
 CCFLAGS += -Wall
