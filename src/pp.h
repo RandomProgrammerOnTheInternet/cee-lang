@@ -16,7 +16,12 @@ char *remove_line(char *str, u64 start, u64 *i) {
 	while(str[*i] != '\0' && str[*i] != '\n') {
 		++*i;
 	}
-	return strcpy(substr(str, 0, start - 1), substr(str, *i, strlen(str) - 1));
+	char *str1 = substr(str, 0, start - 1);
+	char *str2 = substr(str, *i, strlen(str) - 1);
+	char *res = strcpy(str1, str2);
+	free(str2);
+	free(str);
+	return res;
 }
 
 char *remove_comments(char *str) {
