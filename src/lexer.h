@@ -4,7 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "ds.h"
-#define UTIL_IMPL
 #include "util.h"
 
 typedef enum token_type {
@@ -81,6 +80,7 @@ typedef enum token_type {
 	token_op_minus_equals,
 	token_op_asterisk_equals,
 	token_op_slash_equals,
+	token_op_percent_equals,
 	token_op_bitwise_and_equals,
 	token_op_bitwise_or_equals,
 	token_op_bitwise_xor_equals,
@@ -111,6 +111,8 @@ typedef enum token_type {
 	token_op_greater_than_equal_to,
 	token_op_left_bracket,
 	token_op_right_bracket,
+	token_op_attr_begin,
+	token_op_attr_end,
 	token_op_comma,
 
 	token_type_count
@@ -190,6 +192,7 @@ const char *token_table[] = {
 	"-=",
 	"*=",
 	"/=",
+	"%=",
 	"&=",
 	"|=",
 	"^=",
@@ -220,12 +223,15 @@ const char *token_table[] = {
 	">=",
 	"[",
 	"]",
+	"[[",
+	"]]",
 	","
 };
 
 typedef struct token_t {
 	token_type type;
 	char *value;
+	bool on_stack;
 } token_t;
 
 NEW_LIST(token_t);
@@ -246,21 +252,19 @@ token_t tokenize_identifier(char *str, u64 start, u64 *i) {
 		++*i;
 	}
 	char *buffer = substr(str, start, *i);
-	printf("Buffer: %s\n", buffer);
 	for(int j = 0; j < token_type_count - 1; j++) {
-		printf("j: %d\n", j);
 		if(!token_table[j]) {
-			printf("loop broke\n");
 			break;
 		}
 		if(strcmp(buffer, token_table[j]) == 0) {
 			/*LIST_APPEND(tokens, ((token_t){
 				.type = j,
 				.value = buffer
-			}));i*/
+			}));*/
 			token = (token_t) {
 				.type = j,
-				.value = buffer
+				.value = buffer,
+				.on_stack = 0
 			};
 			goto found;
 		}
@@ -272,7 +276,8 @@ token_t tokenize_identifier(char *str, u64 start, u64 *i) {
 	}));*/
 	token = (token_t) {
 		.type = token_identifier,
-		.value = buffer
+		.value = buffer,
+		.on_stack = 0
 	};
 found:
 	return token; 
@@ -284,20 +289,318 @@ token_t tokenize_int_literal(char *str, u64 start, u64 *i) {
 	}
 	return (token_t) {
 		.type = token_int_literal,
-		.value = substr(str, start, *i)
+		.value = substr(str, start, *i),
+		.on_stack = 0
 	};
 }
-/*
+
 token_t tokenize_operator(char *str, u64 start, u64 *i) {
-	
+	switch(str[start]) {
+	case '+':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_plus_equals,
+				.value = "+=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '+') {
+			++*i;
+			return (token_t) {
+				.type = token_op_plus_plus,
+				.value = "++",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_plus,
+			.value = "+",
+			.on_stack = 1
+		};
+		break;
+	case '-':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_minus_equals,
+				.value = "-=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '-') {
+			++*i;
+			return (token_t) {
+				.type = token_op_minus_minus,
+				.value = "--",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '>') {
+			++*i;
+			return (token_t) {
+				.type = token_op_arrow,
+				.value = "->",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_minus,
+			.value = "-",
+			.on_stack = 1
+		};
+		break;
+	case '*':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_asterisk_equals,
+				.value = "*=",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_asterisk,
+			.value = "*",
+			.on_stack = 1
+		};
+		break;
+	case '/':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_slash_equals,
+				.value = "/=",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_slash,
+			.value = "/",
+			.on_stack = 1
+		};
+		break;
+	case '%':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_percent_equals,
+				.value = "%=",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_percent,
+			.value = "%",
+			.on_stack = 1
+		};
+		break;
+	case '&':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_bitwise_and_equals,
+				.value = "&=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '&') {
+			++*i;
+			return (token_t) {
+				.type = token_op_boolean_and,
+				.value = "&&",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_bitwise_and,
+			.value = "&",
+			.on_stack = 1
+		};
+		break;
+	case '|':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_bitwise_or_equals,
+				.value = "|=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '|') {
+			++*i;
+			return (token_t) {
+				.type = token_op_boolean_or,
+				.value = "||",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_bitwise_or,
+			.value = "|",
+			.on_stack = 1
+		};
+		break;
+	case '^':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_bitwise_xor_equals,
+				.value = "^=",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_bitwise_xor,
+			.value = "^",
+			.on_stack = 1
+		};
+		break;
+	case '<':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_less_than_equal_to,
+				.value = "<=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '<' && str[*i + 1] == '=') {
+			*i += 2;
+			return (token_t) {
+				.type = token_op_bitshift_left_equals,
+				.value = "<<=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '<') {
+			++*i;
+			return (token_t) {
+				.type = token_op_bitshift_left,
+				.value = "<<",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_less_than,
+			.value = "<",
+			.on_stack = 1
+		};
+		break;
+	case '>':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_greater_than_equal_to,
+				.value = ">=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '>' && str[*i + 1] == '=') {
+			*i += 2;
+			return (token_t) {
+				.type = token_op_bitshift_right_equals,
+				.value = ">>=",
+				.on_stack = 1
+			};
+		}
+		else if(str[*i] == '>') {
+			++*i;
+			return (token_t) {
+				.type = token_op_bitshift_right,
+				.value = ">>",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_greater_than,
+			.value = ">",
+			.on_stack = 1
+		};
+		break;
+	case '!':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_not_equals,
+				.value = "!=",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_boolean_not,
+			.value = "!",
+			.on_stack = 1
+		};
+		break;
+	case '=':
+		if(str[*i] == '=') {
+			++*i;
+			return (token_t) {
+				.type = token_op_equals_equals,
+				.value = "==",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_equals,
+			.value = "=",
+			.on_stack = 1
+		};
+		break;
+	case '[':
+		if(str[*i] == '[') {
+			++*i;
+			return (token_t) {
+				.type = token_op_attr_begin,
+				.value = "[[",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_left_bracket,
+			.value = "[",
+			.on_stack = 1
+		};
+		break;
+	case ']':
+		if(str[*i] == ']') {
+			++*i;
+			return (token_t) {
+				.type = token_op_attr_begin,
+				.value = "]]",
+				.on_stack = 1
+			};
+		}
+		return (token_t) {
+			.type = token_op_left_bracket,
+			.value = "]",
+			.on_stack = 1
+		};
+		break;
+	default:
+		char *buffer = substr(str, start, *i);
+		for(int j = token_op_plus; j < token_type_count; j++) {
+			if(strcmp(buffer, token_table[j]) == 0) {
+				return (token_t) {
+					.value = buffer,
+					.type = j,
+					.on_stack = 1
+				};
+				goto found;
+			}
+		}
+		error(invalid_op, "invalid operator");
+	}
+	error(invalid_op, "invalid operator");
+found:
 }
-*/
+
 LIST(token_t) tokenize(char *str) {
 	printf("Tokenize Arg: %s\n", str);
 	LIST(token_t) tokens;
 	INIT_LIST(tokens, 0);
 	for(u64 i = 0; str[i]; i++) {
-		printf("new loop\n");
 		// identifiers/keywords
 		if(isalpha(str[i]) || str[i] == '_') {
 			u64 start = i;
@@ -315,11 +618,11 @@ LIST(token_t) tokenize(char *str) {
 			LIST_APPEND(tokens, tokenize_int_literal(str, start, &i));
 		}
 		// operators
-		/*else {
+		else {
 			u64 start = i;
 			i++;
-			LIST_APPEND(tokens, tokenize_operator(str, start &i));
-		}*/
+			LIST_APPEND(tokens, tokenize_operator(str, start, &i));
+		}
 	}
 	return tokens;
 }
