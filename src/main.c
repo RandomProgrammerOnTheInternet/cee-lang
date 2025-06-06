@@ -5,13 +5,9 @@
 #include "pp.h"
 #define LEXER_IMPL
 #include "lexer.h"
+#define UTIL_IMPL
+#include "util.h"
 
-typedef enum error_code : u16 {
-	no_file,
-	invalid_file
-} error_code;
-
-void error(error_code code, char *message);
 char *read_whole_file(FILE *f);
 void compile(int argc, char **argv);
 
@@ -19,12 +15,6 @@ int main(int argc, char **argv) {
 	compile(argc, argv);
 
 	return 0;
-}
-
-void error(u16 code, char *message) {
-	fprintf(stderr, "skill issue #%hu: ", code);
-	fprintf(stderr, "%s\n", message);
-	exit(1);
 }
 
 char *read_whole_file(FILE *f) {
@@ -47,13 +37,15 @@ void compile(int argc, char **argv) {
 		error(invalid_file, "invalid file");
 	}
 	char *src_str = preprocess(read_whole_file(src_file));
-	printf("%s\n", src_str);
+	printf("Preprocessed File:\n%s\n", src_str);
 	LIST(token_t) tokens = tokenize(src_str);
 	printf("%lu\n", tokens.size);
 	for(int i = 0; i < tokens.size / sizeof(tokens); i++) {
 		printf("tokens.value[%d].value: %s\n", i, tokens.value[i].value);
 		printf("tokens.value[%d].type:  %d\n", i, tokens.value[i].type);
-		free(tokens.value[i].value);
+		if(!tokens.value[i].on_stack) {
+			free(tokens.value[i].value);
+		}
 	}
 	free(src_str);
 	fclose(src_file);
