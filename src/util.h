@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 typedef int8_t i8;
 typedef int16_t i16;
@@ -17,11 +18,24 @@ typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
 
+typedef enum error_code : u16 {
+	no_file,
+	invalid_file,
+	invalid_op
+} error_code;
+
+void error(error_code code, char *message);
 char *substr(char *str, u64 start, u64 end);
 
 #endif // UTIL_H
 
 #ifdef UTIL_IMPL
+
+void error(u16 code, char *message) {
+	fprintf(stderr, "skill issue #%hu: ", code);
+	fprintf(stderr, "%s\n", message);
+	exit(1);
+}
 
 char *substr(char *str, u64 start, u64 end) {
 	return strndup(str + start, end - start);
