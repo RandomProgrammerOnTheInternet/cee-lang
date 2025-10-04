@@ -114,6 +114,9 @@ typedef enum token_type {
 	token_op_attr_begin,
 	token_op_attr_end,
 	token_op_comma,
+	token_op_semicolon,
+	token_op_left_curly_brace,
+	token_op_right_curly_brace,
 
 	token_type_count
 } token_type;
@@ -225,20 +228,22 @@ const char *token_table[] = {
 	"]",
 	"[[",
 	"]]",
-	","
+	",",
+	";",
+	"{",
+	"}"
 };
 
 typedef struct token_t {
 	token_type type;
 	char *value;
-	bool on_stack;
 } token_t;
 
 NEW_LIST(token_t);
 
 token_t tokenize_identifier(char *str, u64 start, u64 *i);
 token_t tokenize_int_literal(char *str, u64 start, u64 *i);
-//token_t tokenize_operator(char *str, u64 start, u64 *i);
+token_t tokenize_operator(char *str, u64 start, u64 *i);
 LIST(token_t) tokenize(char *str);
 
 #endif // LEXER_H
@@ -257,27 +262,16 @@ token_t tokenize_identifier(char *str, u64 start, u64 *i) {
 			break;
 		}
 		if(strcmp(buffer, token_table[j]) == 0) {
-			/*LIST_APPEND(tokens, ((token_t){
-				.type = j,
-				.value = buffer
-			}));*/
 			token = (token_t) {
 				.type = j,
 				.value = buffer,
-				.on_stack = 0
 			};
 			goto found;
 		}
 	}
-	/*
-	LIST_APPEND(tokens, ((token_t) {
-		.type = token_identifier,
-		.value = buffer
-	}));*/
 	token = (token_t) {
 		.type = token_identifier,
 		.value = buffer,
-		.on_stack = 0
 	};
 found:
 	return token; 
@@ -290,7 +284,6 @@ token_t tokenize_int_literal(char *str, u64 start, u64 *i) {
 	return (token_t) {
 		.type = token_int_literal,
 		.value = substr(str, start, *i),
-		.on_stack = 0
 	};
 }
 
@@ -301,22 +294,19 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_plus_equals,
-				.value = "+=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '+') {
 			++*i;
 			return (token_t) {
 				.type = token_op_plus_plus,
-				.value = "++",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_plus,
-			.value = "+",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '-':
@@ -324,30 +314,26 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_minus_equals,
-				.value = "-=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '-') {
 			++*i;
 			return (token_t) {
 				.type = token_op_minus_minus,
-				.value = "--",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '>') {
 			++*i;
 			return (token_t) {
 				.type = token_op_arrow,
-				.value = "->",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_minus,
-			.value = "-",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '*':
@@ -355,14 +341,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_asterisk_equals,
-				.value = "*=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_asterisk,
-			.value = "*",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '/':
@@ -370,14 +354,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_slash_equals,
-				.value = "/=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_slash,
-			.value = "/",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '%':
@@ -385,14 +367,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_percent_equals,
-				.value = "%=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_percent,
-			.value = "%",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '&':
@@ -400,22 +380,19 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_bitwise_and_equals,
-				.value = "&=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '&') {
 			++*i;
 			return (token_t) {
 				.type = token_op_boolean_and,
-				.value = "&&",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_bitwise_and,
-			.value = "&",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '|':
@@ -423,22 +400,19 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_bitwise_or_equals,
-				.value = "|=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '|') {
 			++*i;
 			return (token_t) {
 				.type = token_op_boolean_or,
-				.value = "||",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_bitwise_or,
-			.value = "|",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '^':
@@ -446,14 +420,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_bitwise_xor_equals,
-				.value = "^=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_bitwise_xor,
-			.value = "^",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '<':
@@ -461,30 +433,26 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_less_than_equal_to,
-				.value = "<=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '<' && str[*i + 1] == '=') {
 			*i += 2;
 			return (token_t) {
 				.type = token_op_bitshift_left_equals,
-				.value = "<<=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '<') {
 			++*i;
 			return (token_t) {
 				.type = token_op_bitshift_left,
-				.value = "<<",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_less_than,
-			.value = "<",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '>':
@@ -492,30 +460,26 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_greater_than_equal_to,
-				.value = ">=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '>' && str[*i + 1] == '=') {
 			*i += 2;
 			return (token_t) {
 				.type = token_op_bitshift_right_equals,
-				.value = ">>=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		else if(str[*i] == '>') {
 			++*i;
 			return (token_t) {
 				.type = token_op_bitshift_right,
-				.value = ">>",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_greater_than,
-			.value = ">",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '!':
@@ -523,14 +487,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_not_equals,
-				.value = "!=",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_boolean_not,
-			.value = "!",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '=':
@@ -538,14 +500,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_equals_equals,
-				.value = "==",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_equals,
-			.value = "=",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case '[':
@@ -553,14 +513,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_attr_begin,
-				.value = "[[",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_left_bracket,
-			.value = "[",
-			.on_stack = 1
+			.value = substr(str, start, *i),
 		};
 		break;
 	case ']':
@@ -568,14 +526,30 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			++*i;
 			return (token_t) {
 				.type = token_op_attr_begin,
-				.value = "]]",
-				.on_stack = 1
+				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
 			.type = token_op_left_bracket,
-			.value = "]",
-			.on_stack = 1
+			.value = substr(str, start, *i),
+		};
+		break;
+	case ';':
+		return (token_t) {
+			.type = token_op_semicolon,
+			.value = substr(str, start, *i),
+		};
+		break;
+	case '{':
+		return (token_t) {
+			.type = token_op_right_curly_brace,
+			.value = substr(str, start, *i),
+		};
+		break;
+	case '}':
+		return (token_t) {
+			.type = token_op_left_curly_brace,
+			.value = substr(str, start, *i),
 		};
 		break;
 	default:
@@ -585,7 +559,6 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 				return (token_t) {
 					.value = buffer,
 					.type = j,
-					.on_stack = 1
 				};
 				goto found;
 			}
@@ -606,6 +579,7 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_identifier(str, start, &i));
+			i--;
 		}
 		// whitespace
 		else if(isspace(str[i])) {
@@ -616,12 +590,14 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_int_literal(str, start, &i));
+			i--;
 		}
 		// operators
 		else {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_operator(str, start, &i));
+			i--;
 		}
 	}
 	return tokens;
