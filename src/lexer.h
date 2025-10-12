@@ -251,7 +251,6 @@ LIST(token_t) tokenize(char *str);
 #ifdef LEXER_IMPL
 
 token_t tokenize_identifier(char *str, u64 start, u64 *i) {
-	token_t token;
 	while(isalnum(str[*i]) || str[*i] == '_') {
 		// c operator precedence in a nutshell
 		++*i;
@@ -262,19 +261,16 @@ token_t tokenize_identifier(char *str, u64 start, u64 *i) {
 			break;
 		}
 		if(strcmp(buffer, token_table[j]) == 0) {
-			token = (token_t) {
+			return (token_t) {
 				.type = j,
 				.value = buffer,
 			};
-			goto found;
 		}
 	}
-	token = (token_t) {
+	return (token_t) {
 		.type = token_identifier,
 		.value = buffer,
 	};
-found:
-	return token; 
 }
 
 token_t tokenize_int_literal(char *str, u64 start, u64 *i) {
@@ -560,17 +556,15 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 					.value = buffer,
 					.type = j,
 				};
-				goto found;
 			}
 		}
-		error(invalid_op, "invalid operator");
+		error(error_invalid_op, "invalid operator");
 	}
-	error(invalid_op, "invalid operator");
-found:
+	error(error_invalid_op, "invalid operator");
 }
 
 LIST(token_t) tokenize(char *str) {
-	printf("Tokenize Arg: %s\n", str);
+	printf("src file: %s\n", str);
 	LIST(token_t) tokens;
 	INIT_LIST(tokens, 0);
 	for(u64 i = 0; str[i]; i++) {
