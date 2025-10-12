@@ -4,22 +4,22 @@
 #include <stdlib.h>
 
 // Dynamic Arrays
-#define NEW_LIST(x) struct list_ ## x {x* value; size_t size;}
+#define NEW_LIST(x) struct list_ ## x {x* value; size_t length;}
 
 #define LIST(x) struct list_ ## x
 
 #define INIT_LIST(x, y) \
-x.size = y * sizeof(typeof(*x.value)); \
-x.value = malloc(x.size);
+x.length = y; \
+x.value = malloc(x.length * sizeof(typeof(x)));
 
 #define LIST_RESIZE(x, y) \
-x.size = y * sizeof(typeof(*x.value)); \
-x.value = realloc(x.value, x.size)
+x.length = y; \
+x.value = realloc(x.value, x.length * sizeof(typeof(x)))
 
-#define LIST_ADD(x, y) LIST_RESIZE(x, (x.size / sizeof(typeof(*x.value)) + y))
+#define LIST_ADD(x, y) LIST_RESIZE(x, x.length + y)
 
 #define LIST_APPEND(x, y) LIST_ADD(x, 1); \
-x.value[x.size / sizeof(typeof(*x.value)) - 1] = y
+x.value[x.length - 1] = y
 
 #define LIST_FREE(x) if(x.value != NULL) free(x.value)
 
