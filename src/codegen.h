@@ -5,8 +5,6 @@
 #include <string.h>
 #include "ds.h"
 
-NEW_LIST(char);
-
 int asprintf(char **restrict strp, const char *restrict fmt, ...); // ...
 char *generate_asm(node_base_t node);
 
