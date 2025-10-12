@@ -19,9 +19,12 @@ typedef float f32;
 typedef double f64;
 
 typedef enum error_code : u16 {
-	no_file,
-	invalid_file,
-	invalid_op
+	error_no_file,
+	error_invalid_file,
+	error_invalid_op,
+	error_invalid_expression,
+	error_missing_expression,
+	error_missing_semicolon
 } error_code;
 
 void error(error_code code, char *message);
