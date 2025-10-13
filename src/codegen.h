@@ -14,13 +14,13 @@ char *generate_asm(node_base_t node);
 
 char *generate_asm(node_base_t node) {
 	char* str;
-	asprintf(&str, ".global _start\n"
-				  "_start:\n"
-				  "mov $60, %%rax\n"
-				  "mov $%s, %%rdi\n"
-				  "syscall\n",
-				  node.return_node.int_lit_node.token.value);
-
+	asprintf(&str, ".intel_syntax noprefix\n"
+				   ".global _start\n"
+				   "_start:\n"
+				   "	mov rax, 60\n"
+				   "	mov rdi, %s\n"
+				   "	syscall\n",
+				   node.return_node.int_lit_node.token.value);
 	
 	return str;
 }
