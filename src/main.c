@@ -44,8 +44,8 @@ void compile(char **argv) {
 	printf("Preprocessed File:\n%s\n", src_str);
 	LIST(token_t) tokens = tokenize(src_str);
 	printf("tokens.length = %lu\n", tokens.length);
-	node_base_t base_node = parse(tokens);
-	printf("base_node.return_node.int_lit.token.value %s\n", base_node.return_node.int_lit_node.token.value);
+	LIST(node_base_t) base_node = parse(tokens);
+	printf("base_node.return_node.int_lit.token.value %s\n", base_node.value[0].statement_node.return_node.expression_node.int_lit_node.token.value);
 	char *asm_code = generate_asm(base_node);
 	FILE *asm_file = fopen("out.asm", "w");
 	fprintf(asm_file, "%s", asm_code);
