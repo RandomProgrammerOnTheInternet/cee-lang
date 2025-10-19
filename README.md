@@ -12,4 +12,4 @@ requires `as` and `ld`, which, let's be honest, everyone has
 ```
 
 Currently, the only valid program is:
-`return <some_int>`
+`return <some_int>;`
