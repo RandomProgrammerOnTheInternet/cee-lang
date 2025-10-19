@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 // Dynamic Arrays
-#define NEW_LIST(x) struct list_ ## x {x* value; size_t length;}
+#define NEW_LIST(x) struct list_ ## x {x* value; size_t length; size_t test[7];}
 
 #define LIST(x) struct list_ ## x
 
