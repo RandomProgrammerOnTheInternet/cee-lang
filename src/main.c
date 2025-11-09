@@ -46,15 +46,12 @@ void compile(char **argv) {
 	printf("tokens.length = %lu\n", tokens.length);
 	LIST(node_base_t) base_node = parse(tokens);
 	printf("base_node.return_node.int_lit.token.value %s\n", base_node.value[0].statement_node.return_node.expression_node.int_lit_node.token.value);
-	char *asm_code = generate_asm(base_node);
-	FILE *asm_file = fopen("out.asm", "w");
-	fprintf(asm_file, "%s", asm_code);
+	FILE *asm_file = generate_asm(base_node);
 	fclose(asm_file);
-	free(asm_code);
 	system("as -o out.o out.asm && ld out.o");
 
 	printf("tokens: ");
-	for(int i = 0; i < tokens.length; i++) {
+	for(size_t i = 0; i < tokens.length; i++) {
 		printf("%s ", tokens.value[i].value);
 		free(tokens.value[i].value);
 	}
