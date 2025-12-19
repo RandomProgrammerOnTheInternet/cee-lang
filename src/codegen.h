@@ -1,4 +1,4 @@
-f CODEGEN_H
+#ifndef CODEGEN_H
 #define CODEGEN_H
 
 #include <stdio.h>
