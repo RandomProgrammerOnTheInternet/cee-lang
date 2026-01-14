@@ -1,8 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-// git test
-
 #include "ds.h"
 #include "util.h"
 
@@ -18,13 +16,7 @@ typedef enum node_type {
 
 typedef enum var_type {
 	var_char = 1,
-	var_short = 2,
 	var_int = 4,
-	var_long = 8,
-	var_long_long = 8,
-	var_float = 4,
-	var_double = 8,
-	var_long_double = 8 // who uses these?
 } var_type;
 
 typedef struct node_int_lit_t {
@@ -98,6 +90,7 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 	INIT_LIST(base_node, 0);
 	for(size_t i = 0; i < tokens.length; i++) {
 		switch(tokens.value[i].type) {
+		case token_keyword_char: [[fallthrough]];
 		case token_keyword_int: [[fallthrough]];
 		case token_keyword_return:
 			LIST_APPEND(base_node, ((node_base_t) {
@@ -172,22 +165,38 @@ node_expression_t parse_expression(LIST(token_t) tokens, size_t *i) {
 }
 
 node_var_declaration_t parse_var_declaration(LIST(token_t) tokens, size_t *i) {
+	var_type type;
+	int new_offset;
+	switch(tokens.value[*i].type) {
+	case token_keyword_int:
+		type = var_int;
+		new_offset = 4;
+		break;
+	case token_keyword_char:
+		type = var_char;
+		new_offset = 1;
+		break;
+	default:
+		printf("\nerror invalid type\n");
+		exit(1);
+		break;
+	}
 	++*i;
 	if(tokens.value[*i].type != token_identifier) {
-		printf("womp womp\n");
+		printf("\nerror no identifier\n");
 		exit(1);
 	}
 	++*i;
 	if(tokens.value[*i].type == token_op_semicolon) {
-		stack_size += var_int;
+		stack_size += new_offset;
 		LIST_APPEND(variable_lookup, ((node_var_t) {
-			.type = var_int,
+			.type = type,
 			.stack_offset = stack_size,
 			.token = tokens.value[*i - 1],
 		}));
 		return (node_var_declaration_t) {
 			.has_value = 0,
-			.type = var_int,
+			.type = type,
 			.token = tokens.value[*i - 1],
 			.stack_offset = stack_size
 		};
@@ -195,24 +204,24 @@ node_var_declaration_t parse_var_declaration(LIST(token_t) tokens, size_t *i) {
 	else if(tokens.value[*i].type == token_op_equals) {
 		++*i;
 		if(tokens.value[*i].type != token_int_literal) {
-			printf("womp womp!\n");
+			printf("\nerror no int lit\n");
 			exit(1);
 		}
 		node_expression_t expression = parse_expression(tokens, i);
 		++*i;
 		if(tokens.value[*i].type != token_op_semicolon) {
-			printf("skill issue\n");
+			printf("\nerror no semicolon\n");
 			exit(1);
 		}
-		stack_size += var_int;
+		stack_size += new_offset;
 		LIST_APPEND(variable_lookup, ((node_var_t) {
-			.type = var_int,
+			.type = type,
 			.stack_offset = stack_size,
 			.token = tokens.value[*i - 3],
 		}));
 		return (node_var_declaration_t) {
 			.has_value = 1,
-			.type = var_int,
+			.type = type,
 			.token = tokens.value[*i - 3],
 			.expression_node = expression,
 			.stack_offset = stack_size
@@ -228,6 +237,7 @@ node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 			.return_node = parse_return(tokens, i)
 		};
 		break;
+	case token_keyword_char: [[fallthrough]];
 	case token_keyword_int:
 		return (node_statement_t) {
 			.type = node_var_declaration,
@@ -235,7 +245,7 @@ node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		break;
 	}
-	printf("uh oh\n");
+	printf("impossible error parse_statement\n");
 	exit(1);
 }
 

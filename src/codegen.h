@@ -40,7 +40,14 @@ void generate_return(LIST(node_base_t) node, FILE **file, size_t *i) {
 		fprintf(*file, "	mov edi, %s\n", node.value[*i].statement_node.return_node.expression_node.int_lit_node.token.value);
 	}
 	else {
-		fprintf(*file, "	mov edi, dword ptr [rsp-%zu]\n", node.value[*i].statement_node.return_node.expression_node.var_node.stack_offset);
+		switch(node.value[*i].statement_node.return_node.expression_node.var_node.type) {
+		case var_int:
+			fprintf(*file, "	mov edi, dword ptr [rsp-%zu]\n", node.value[*i].statement_node.return_node.expression_node.var_node.stack_offset);
+			break;
+		case var_char:
+			fprintf(*file, "	movsx edi, byte ptr [rsp-%zu]\n", node.value[*i].statement_node.return_node.expression_node.var_node.stack_offset);
+			break;
+		}
 	}
 
 	fprintf(*file, "	syscall\n");
@@ -50,8 +57,16 @@ void generate_var_declaration(LIST(node_base_t) node, FILE **file, size_t *i) {
 	if(!node.value[*i].statement_node.var_declaration_node.has_value) {
 		return;
 	}
-	fprintf(*file, "	mov dword ptr [rsp-%zu], %s\n", node.value[*i].statement_node.var_declaration_node.stack_offset,
+	switch(node.value[*i].statement_node.var_declaration_node.type) {
+	case var_int:
+		fprintf(*file, "	mov dword ptr [rsp-%zu], %s\n", node.value[*i].statement_node.var_declaration_node.stack_offset,
 													   node.value[*i].statement_node.var_declaration_node.expression_node.int_lit_node.token.value);
+		break;
+	case var_char:
+		fprintf(*file, "	mov byte ptr [rsp-%zu], %s\n", node.value[*i].statement_node.var_declaration_node.stack_offset,
+													   node.value[*i].statement_node.var_declaration_node.expression_node.int_lit_node.token.value);
+		break;
+	}
 }
 
 #endif // CODEGEN_IMPL
