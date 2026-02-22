@@ -11,7 +11,9 @@ typedef enum node_type {
 	node_var,
 	node_var_declaration,
 	node_expression,
-	node_statement
+	node_statement,
+	node_label,
+	node_goto
 } node_type;
 
 typedef struct node_int_lit_t {
@@ -41,11 +43,21 @@ typedef struct node_return_t {
 	node_expression_t expression_node;
 } node_return_t;
 
+typedef struct node_label_t {
+	token_t token;
+} node_label_t;
+
+typedef struct node_goto_t {
+	node_label_t label_node;
+} node_goto_t;
+
 typedef struct node_statement_t {
 	node_type type;
 	union {
 		node_var_declaration_t var_declaration_node;
 		node_return_t return_node;
+		node_label_t label_node;
+		node_goto_t goto_node;
 	};
 } node_statement_t;
 
@@ -69,6 +81,8 @@ node_return_t parse_return(LIST(token_t) tokens, size_t *i);
 node_var_t parse_var(LIST(token_t) tokens, size_t *i);
 node_expression_t parse_expression(LIST(token_t) tokens, size_t *i);
 node_var_declaration_t parse_var_declaration(LIST(token_t) tokens, size_t *i); // oooh so close
+node_label_t parse_label(LIST(token_t) tokens, size_t *i);
+node_goto_t parse_goto(LIST(token_t) tokens, size_t *i);
 node_statement_t parse_statement(LIST(token_t) tokens, size_t *i);
 
 #endif // PARSER_H
@@ -83,6 +97,7 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 	for(size_t i = 0; i < tokens.length; i++) {
 		switch(tokens.value[i].type) {
 		case token_identifier: [[fallthrough]];
+		case token_keyword_goto: [[fallthrough]];
 		case token_keyword_int: [[fallthrough]];
 		case token_keyword_return:
 			LIST_APPEND(base_node, ((node_base_t) {
@@ -195,6 +210,17 @@ node_var_declaration_t parse_var_declaration(LIST(token_t) tokens, size_t *i) {
 	};
 }
 
+node_label_t parse_label(LIST(token_t) tokens, size_t *i) {
+	++*i;
+	return (node_label_t) {
+		.token = tokens.value[*i - 1]
+	};
+}
+
+node_goto_t parse_goto(LIST(token_t) tokens, size_t *i) {
+
+}
+
 node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 	switch(tokens.value[*i].type) {
 	case token_keyword_return:
@@ -211,6 +237,13 @@ node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		break;
 	case token_identifier:
+		printf("case token_identifier: %s\n", tokens.value[*i].value);
+		if(tokens.value[*i + 1].type == token_op_colon) {
+			return (node_statement_t) {
+				.type = node_label,
+				.label_node = parse_label(tokens, i)
+			};
+		}
 		break;
 	}
 	printf("impossible error parse_statement\n");
