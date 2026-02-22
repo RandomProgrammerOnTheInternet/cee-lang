@@ -48,7 +48,7 @@ typedef struct node_label_t {
 } node_label_t;
 
 typedef struct node_goto_t {
-	node_label_t label_node;
+	token_t token;
 } node_goto_t;
 
 typedef struct node_statement_t {
@@ -218,7 +218,19 @@ node_label_t parse_label(LIST(token_t) tokens, size_t *i) {
 }
 
 node_goto_t parse_goto(LIST(token_t) tokens, size_t *i) {
-
+	++*i;
+	if(tokens.value[*i].type != token_identifier) {
+		printf("error no identifier in goto\n");
+		exit(1);
+	}
+	++*i;
+	if(tokens.value[*i].type != token_op_semicolon) {
+		printf("error missing semicolon in goto\n");
+		exit(1);
+	}
+	return (node_goto_t) {
+		.token = tokens.value[*i - 1]
+	};
 }
 
 node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
@@ -227,6 +239,12 @@ node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 		return (node_statement_t) {
 			.type = node_return,
 			.return_node = parse_return(tokens, i)
+		};
+		break;
+	case token_keyword_goto:
+		return (node_statement_t) {
+			.type = node_goto,
+			.goto_node = parse_goto(tokens, i)
 		};
 		break;
 	case token_keyword_char: [[fallthrough]];
