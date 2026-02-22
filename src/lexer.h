@@ -243,6 +243,7 @@ NEW_LIST(token_t);
 
 token_t tokenize_identifier(char *str, u64 start, u64 *i);
 token_t tokenize_int_literal(char *str, u64 start, u64 *i);
+token_t tokenize_char_literal(char *str, u64 start, u64 *i);
 token_t tokenize_operator(char *str, u64 start, u64 *i);
 LIST(token_t) tokenize(char *str);
 
@@ -280,6 +281,24 @@ token_t tokenize_int_literal(char *str, u64 start, u64 *i) {
 	return (token_t) {
 		.type = token_int_literal,
 		.value = substr(str, start, *i),
+	};
+}
+
+token_t tokenize_char_literal(char *str, u64 start, u64 *i) {
+	if(str[*i] == '\\') {
+		printf("\\ detected\n");
+		++*i;
+	}
+	printf("292 %c\n", str[*i]);
+	++*i;
+	printf("294 %c\n", str[*i]);
+	if(str[*i] != '\'') {
+		printf("\nerror invalid char lit\n");
+		exit(1);
+	}
+	return (token_t) {
+		.type = token_char_literal,
+		.value = substr(str, start, *i)
 	};
 }
 

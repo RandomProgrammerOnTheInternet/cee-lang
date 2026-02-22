@@ -42,10 +42,15 @@ void compile(char **argv) {
 	}
 	char *src_str = read_whole_file(src_file);
 	printf("Preprocessed File:\n%s\n", src_str);
+
 	LIST(token_t) tokens = tokenize(src_str);
 	printf("tokens.length = %lu\n", tokens.length);
+
 	LIST(node_base_t) base_node = parse(tokens);
-	printf("base_node.return_node.int_lit.token.value %s\n", base_node.value[0].statement_node.return_node.expression_node.int_lit_node.token.value);
+	for(int i = 0; i < variable_lookup.length; i++) {
+		printf("%s %d\n", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
+	}
+
 	FILE *asm_file = generate_asm(base_node);
 	fclose(asm_file);
 	system("as -o out.o out.asm && ld out.o");
