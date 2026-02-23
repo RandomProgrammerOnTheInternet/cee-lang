@@ -13,7 +13,8 @@ typedef enum node_type {
 	node_expression,
 	node_statement,
 	node_label,
-	node_goto
+	node_goto,
+	node_assignment
 } node_type;
 
 typedef struct node_int_lit_t {
@@ -39,6 +40,11 @@ typedef struct node_var_declaration_t {
 	node_expression_t expression_node;
 } node_var_declaration_t;
 
+typedef struct node_assignment_t {
+	node_var_t lhs;
+	node_expression_t rhs;
+} node_assignment_t;
+
 typedef struct node_return_t {
 	node_expression_t expression_node;
 } node_return_t;
@@ -58,6 +64,7 @@ typedef struct node_statement_t {
 		node_return_t return_node;
 		node_label_t label_node;
 		node_goto_t goto_node;
+		node_assignment_t assignment_node;
 	};
 } node_statement_t;
 
@@ -83,7 +90,10 @@ node_expression_t parse_expression(LIST(token_t) tokens, size_t *i);
 node_var_declaration_t parse_var_declaration(LIST(token_t) tokens, size_t *i); // oooh so close
 node_label_t parse_label(LIST(token_t) tokens, size_t *i);
 node_goto_t parse_goto(LIST(token_t) tokens, size_t *i);
+node_assignment_t parse_assignment(LIST(token_t) tokens, size_t *i);
 node_statement_t parse_statement(LIST(token_t) tokens, size_t *i);
+
+bool identifier_is_var(token_t token);
 
 #endif // PARSER_H
 
@@ -96,10 +106,10 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 	INIT_LIST(base_node, 0);
 	for(size_t i = 0; i < tokens.length; i++) {
 		switch(tokens.value[i].type) {
-		case token_identifier: [[fallthrough]];
 		case token_keyword_goto: [[fallthrough]];
 		case token_keyword_int: [[fallthrough]];
-		case token_keyword_return:
+		case token_keyword_return: [[fallthrough]];
+		case token_identifier:
 			LIST_APPEND(base_node, ((node_base_t) {
 				.type = node_statement,
 				.statement_node = parse_statement(tokens, &i)
@@ -232,6 +242,18 @@ node_goto_t parse_goto(LIST(token_t) tokens, size_t *i) {
 		.token = tokens.value[*i - 1]
 	};
 }
+node_assignment_t parse_assignment(LIST(token_t) tokens, size_t *i) {
+	node_assignment_t assignment;
+	assignment.lhs = parse_var(tokens, i);
+	++*i;
+	if(tokens.value[*i].type != token_op_equals) {
+		printf("missing equals in assignmen\n");
+		exit(1);
+	}
+	++*i;
+	assignment.rhs = parse_expression(tokens, i);
+	return assignment;
+}
 
 node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 	switch(tokens.value[*i].type) {
@@ -256,7 +278,13 @@ node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 		break;
 	case token_identifier:
 		printf("case token_identifier: %s\n", tokens.value[*i].value);
-		if(tokens.value[*i + 1].type == token_op_colon) {
+		if(identifier_is_var(tokens.value[*i])) {
+			return (node_statement_t) {
+				.type = node_assignment,
+				.assignment_node = parse_assignment(tokens, i)
+			};
+		}
+		else if(tokens.value[*i + 1].type == token_op_colon) {
 			return (node_statement_t) {
 				.type = node_label,
 				.label_node = parse_label(tokens, i)
@@ -266,6 +294,15 @@ node_statement_t parse_statement(LIST(token_t) tokens, size_t *i) {
 	}
 	printf("impossible error parse_statement\n");
 	exit(1);
+}
+
+bool identifier_is_var(token_t token) {
+	for(size_t i = 0; i < variable_lookup.length; i++) {
+		if(!strcmp(token.value, variable_lookup.value[i].token.value)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 #endif // PARSER_IMPL

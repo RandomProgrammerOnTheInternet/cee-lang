@@ -10,6 +10,7 @@ void generate_return(LIST(node_base_t) node, FILE **file, size_t *i);
 void generate_var_declaration(LIST(node_base_t) node, FILE **file, size_t *i);
 void generate_label(LIST(node_base_t) node, FILE **file, size_t *i);
 void generate_goto(LIST(node_base_t) node, FILE **file, size_t *i);
+void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i);
 
 #endif // CODEGEN_H
 
@@ -33,6 +34,9 @@ FILE *generate_asm(LIST(node_base_t) node) {
 			break;
 		case node_goto:
 			generate_goto(node, &file, &i);
+			break;
+		case node_assignment:
+			generate_assignment(node, &file, &i);
 			break;
 		}
 	}
@@ -75,6 +79,21 @@ void generate_label(LIST(node_base_t) node, FILE **file, size_t *i) {
 
 void generate_goto(LIST(node_base_t) node, FILE **file, size_t *i) {
 	fprintf(*file, "	jmp .label_%s\n", node.value[*i].statement_node.goto_node.token.value);
+}
+
+void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
+	if(node.value[*i].statement_node.assignment_node.rhs.type == node_var) {
+		fprintf(*file, "	mov eax, dword ptr [rsp-%zu]\n", node.value[*i].statement_node.assignment_node.lhs.stack_offset);
+		fprintf(*file, "	mov dword ptr [rsp-%zu], eax\n", node.value[*i].statement_node.assignment_node.rhs.var_node.stack_offset);
+	}
+	else if(node.value[*i].statement_node.assignment_node.rhs.type == node_int_lit) {
+		fprintf(*file, "	mov dword ptr [rsp-%zu], %s\n", node.value[*i].statement_node.assignment_node.lhs.stack_offset,
+			node.value[*i].statement_node.assignment_node.rhs.int_lit_node.token.value);
+	}
+	else {
+		printf("\ncodegen error assignment\n");
+		exit(1);
+	}
 }
 
 #endif // CODEGEN_IMPL
