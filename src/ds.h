@@ -24,3 +24,11 @@ x.value[x.length - 1] = y
 #define LIST_FREE(x) if(x.value != NULL) free(x.value)
 
 #endif // DS_H
+
+#ifdef DS_IMPL
+
+typedef struct arena_t {
+	void *buf;
+} arena_t;
+
+#endif

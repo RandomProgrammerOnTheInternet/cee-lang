@@ -6,7 +6,7 @@
 #include "ds.h"
 #include "util.h"
 
-typedef enum token_type {
+enum token_type : u8 {
 	token_keyword_auto = 0,
 	token_keyword_break,
 	token_keyword_case,
@@ -119,7 +119,7 @@ typedef enum token_type {
 	token_op_right_curly_brace,
 
 	token_type_count
-} token_type;
+};
 
 const char *token_table[] = {
 	"auto",
@@ -235,7 +235,7 @@ const char *token_table[] = {
 };
 
 typedef struct token_t {
-	token_type type;
+	enum token_type type;
 	char *value;
 } token_t;
 

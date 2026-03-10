@@ -27,14 +27,14 @@ typedef enum error_code : u16 {
 	error_missing_semicolon
 } error_code;
 
-void error(error_code code, char *message);
+[[noreturn]] void error(error_code code, char *message);
 char *substr(char *str, u64 start, u64 end);
 
 #endif // UTIL_H
 
 #ifdef UTIL_IMPL
 
-void error(u16 code, char *message) {
+[[noreturn]] void error(u16 code, char *message) {
 	fprintf(stderr, "skill issue #%hu: ", code);
 	fprintf(stderr, "%s\n", message);
 	exit(1);

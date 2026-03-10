@@ -47,8 +47,8 @@ void compile(char **argv) {
 	printf("tokens.length = %lu\n", tokens.length);
 
 	LIST(node_base_t) base_node = parse(tokens);
-	for(int i = 0; i < variable_lookup.length; i++) {
-		printf("%s %d\n", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
+	for(size_t i = 0; i < variable_lookup.length; i++) {
+		printf("%s %zu\n", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
 	}
 
 	FILE *asm_file = generate_asm(base_node);
