@@ -92,7 +92,7 @@ void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i) {
 	else if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_bin_expr) {
 		LOG(PRN_YLW, "expr is bin_expr");
 		generate_bin_expr(*node.value[*i].statement_node->var_decl_node->expr_node, file, i);
-		fprintf(*file, "	mov dword ptr [rsp-%zu], eax\n", node.value[*i].statement_node->var_decl_node->expr_node->var_node->stack_offset);
+		fprintf(*file, "	mov dword ptr [rsp-%zu], eax\n", node.value[*i].statement_node->var_decl_node->stack_offset);
 	}
 	else {
 		printf("\ncodegen error var decl\n");
