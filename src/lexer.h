@@ -583,12 +583,14 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 }
 
 LIST(token_t) tokenize(char *str) {
-	printf("src file: %s\n", str);
+	LOG(PRN_RED, "called tokenize()");
 	LIST(token_t) tokens;
 	INIT_LIST(tokens, 0);
 	for(u64 i = 0; str[i]; i++) {
+		LOG(PRN_RED, "loop");
 		// identifiers/keywords
 		if(isalpha(str[i]) || str[i] == '_') {
+			LOG(PRN_RED, "detected identifier");
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_identifier(str, start, &i));
@@ -596,10 +598,12 @@ LIST(token_t) tokenize(char *str) {
 		}
 		// whitespace
 		else if(isspace(str[i])) {
+			LOG(PRN_RED, "detected whitespace");
 			continue;
 		}
 		// integer literals
 		else if(isdigit(str[i])) {
+			LOG(PRN_RED, "detected int lit");
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_int_literal(str, start, &i));
@@ -607,12 +611,14 @@ LIST(token_t) tokenize(char *str) {
 		}
 		// operators
 		else {
+			LOG(PRN_RED, "detected operator");
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_operator(str, start, &i));
 			i--;
 		}
 	}
+	LOG(PRN_RED, "end loop");
 	return tokens;
 }
 

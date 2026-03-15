@@ -1,3 +1,5 @@
+#define DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -20,6 +22,7 @@ int main(int argc, char **argv) {
 		error(error_no_file, "you need a file bro");
 	}
 	compile(argv);
+	LOG(PRN_BLU, "ended compilation");
 
 	return 0;
 }
@@ -40,27 +43,26 @@ void compile(char **argv) {
 	if(!(src_file = fopen(argv[1], "r"))) {
 		error(error_invalid_file, "invalid file");
 	}
+	LOG(PRN_BLU, "opened file");
 	char *src_str = read_whole_file(src_file);
-	printf("Preprocessed File:\n%s\n", src_str);
+	LOG(PRN_BLU, "converted file to string:\n%s", src_str);
 
 	LIST(token_t) tokens = tokenize(src_str);
-	printf("tokens.length = %lu\n", tokens.length);
+	LOG(PRN_BLU, "converted string to %lu tokens", tokens.length);
 
 	LIST(node_base_t) base_node = parse(tokens);
+	LOG(PRN_BLU, "converted tokens to nodes");
 	for(size_t i = 0; i < variable_lookup.length; i++) {
-		printf("%s %zu\n", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
+		LOG(PRN_BLU, "variable name: %s | stack offset: %zu", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
 	}
-
 	FILE *asm_file = generate_asm(base_node);
+	LOG(PRN_BLU, "generated asm");
 	fclose(asm_file);
 	system("as -o out.o out.asm && ld out.o");
+	LOG(PRN_BLU, "assembled");
 
-	printf("tokens: ");
-	for(size_t i = 0; i < tokens.length; i++) {
-		printf("%s ", tokens.value[i].value);
-		free(tokens.value[i].value);
-	}
 	free(src_str);
 	fclose(src_file);
 	LIST_FREE(tokens);
+	LOG(PRN_BLU, "freed mem");
 }

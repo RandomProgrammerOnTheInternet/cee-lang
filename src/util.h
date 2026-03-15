@@ -5,6 +5,21 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef DEBUG
+#define PRN_BLK "\e[0;30m"
+#define PRN_RED "\e[0;31m"
+#define PRN_GRN "\e[0;32m"
+#define PRN_YLW "\e[0;33m"
+#define PRN_BLU "\e[0;34m"
+#define PRN_PUR "\e[0;35m"
+#define PRN_CYN "\e[0;36m"
+#define PRN_WHT "\e[0;37m"
+#define LOG(color, msg, ...) \
+printf("%s%d %s: %s", color, __LINE__, __func__, PRN_WHT); \
+printf(msg __VA_OPT__(,) __VA_ARGS__); \
+printf("\n")
+#endif // DEBUG
+
 typedef int8_t i8;
 typedef int16_t i16;
 typedef int32_t i32;

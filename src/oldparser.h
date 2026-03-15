@@ -1,9 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "ds.h"
+#include "util.h"
 
 typedef enum node_type : u8 {
 	node_base = 0,
@@ -117,11 +116,11 @@ bool identifier_is_var(token_t token);
 #ifdef PARSER_IMPL
 
 LIST(node_base_t) parse(LIST(token_t) tokens) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "called parse()");
 	INIT_LIST(variable_lookup, 0);
+	// trust me on this
 	LIST(node_base_t) base_node;
 	INIT_LIST(base_node, 0);
-
 	for(size_t i = 0; i < tokens.length; i++) {
 		LOG(PRN_GRN, "loop");
 		switch(tokens.value[i].type) {
@@ -138,61 +137,66 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 			break;
 		case token_op_semicolon: break;
 		default:
-			LOG(PRN_GRN, "default");
 			break;
 		}
 	}
-	LOG(PRN_GRN, "end");
+	
 	return base_node;
 }
 
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	node_int_lit_t *node = malloc(sizeof(node_int_lit_t));
-	if(tokens.value[*i].type != token_int_literal) {
-		LOG(PRN_GRN, "ERROR");
+	LOG(PRN_GRN, "called parse_int_lit()");
+	if(*i >= tokens.length) {
+		error(error_missing_expression, "your missing a number after the return");
 	}
-	*node = (node_int_lit_t) {
+	if(tokens.value[*i].type != token_int_literal) {
+		error(error_invalid_expression, "there is supposed to be a number after the return");
+	}
+	node_int_lit_t *node = malloc(sizeof(node_int_lit_t));
+	LOG(PRN_GRN, "memory allocated");
+	*node = (node_int_lit_t){
 		.token = tokens.value[*i]
 	};
 	
-	LOG(PRN_GRN, "end");
 	return node;
 }
 
 node_return_t *parse_return(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "called parse_return()");
 	++*i;
 	node_return_t *node = malloc(sizeof(node_return_t));
+	LOG(PRN_GRN, "memory allocated");
 	*node = (node_return_t) {
-		.expr_node= parse_expr(tokens, i)
+		.expr_node = parse_expr(tokens, i)
 	};
 	++*i;
 	if(tokens.value[*i].type != token_op_semicolon) {
-		LOG(PRN_GRN, "ERROR");
+		error(error_missing_semicolon, "bro you missed a semicolon at the end of the return");
 	}
-
-	LOG(PRN_GRN, "end");
+	
 	return node;
 }
 
 node_var_t *parse_var(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "called parse_var()");
+	size_t j;
 	LOG(PRN_GRN, "variable_lookup.length = %zu", variable_lookup.length);
-	for(size_t j = 0; j < variable_lookup.length; j++) {
+	for(j = 0; j < variable_lookup.length; j++) {
 		LOG(PRN_GRN, "loop: %s", variable_lookup.value[j].token.value);
-		if(!strcmp(tokens.value[*i].value, variable_lookup.value[j].token.value)) {
-			LOG(PRN_GRN, "end");
+		if(strcmp(tokens.value[*i].value,
+				  variable_lookup.value[j].token.value) == 0) {
+			LOG(PRN_GRN, "var parsed");
 			return &variable_lookup.value[j];
 		}
 	}
-	LOG(PRN_GRN, "ERROR");
+	printf("uh oh!!\n");
 	exit(1);
 }
 
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "called parse_expr()");
 	node_expr_t *node = malloc(sizeof(node_expr_t));
+	LOG(PRN_GRN, "memory allocated");
 	enum token_type op = tokens.value[*i + 1].type;
 	switch(tokens.value[*i].type) {
 	case token_int_literal:
@@ -204,48 +208,49 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 				.bin_expr_node = parse_bin_expr(tokens, i)
 			};
 		}
-		else {
-			LOG(PRN_GRN, "not bin_expr");
-			*node = (node_expr_t) {
-				.type = node_int_lit,
-				.int_lit_node = parse_int_lit(tokens, i)
-			};
-		}
+		LOG(PRN_GRN, "not bin_expr");
+		*node = (node_expr_t) {
+			.type = node_int_lit,
+			.int_lit_node = parse_int_lit(tokens, i)
+		};
+		return node;
 		break;
 	case token_identifier:
-		LOG(PRN_GRN, "var");
+		LOG(PRN_GRN, "identifier");
 		if(op == token_op_plus) {
 			LOG(PRN_GRN, "bin_expr");
 			*node = (node_expr_t) {
 				.type = node_bin_expr,
 				.bin_expr_node = parse_bin_expr(tokens, i)
 			};
+			return node;
+			break;
 		}
-		else {
-			LOG(PRN_GRN, "not bin_expr");
-			*node = (node_expr_t) {
-				.type = node_var,
-				.var_node = parse_var(tokens, i)
-			};
-		}
+		LOG(PRN_GRN, "not bin_expr");
+		*node = (node_expr_t) {
+			.type = node_var,
+			.var_node = parse_var(tokens, i)
+		};
+		return node;
 		break;
 	default:
-		LOG(PRN_GRN, "ERROR");
+		printf("\nerror invalid expr\n");
 		exit(1);
 	}
-
-	LOG(PRN_GRN, "end");
-	return node;
+	printf("uh oh!\n");
+	exit(1);
 }
 
 node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "%d", bin_expr_add);
+	LOG(PRN_GRN, "called parse_bin_expr()");
 	node_bin_expr_t *node = malloc(sizeof(node_bin_expr_t));
+	LOG(PRN_GRN, "memory allocated");
 	if(tokens.value[*i].type == token_int_literal) {
 		LOG(PRN_GRN, "lhs is int_lit");
 		node_expr_t *expr = malloc(sizeof(node_expr_t));
 		expr->int_lit_node = parse_int_lit(tokens, i);
-		expr->type = node_var;
+		expr->type = node_int_lit;
 		node->lhs = expr;
 	}
 	else if(tokens.value[*i].type == token_identifier) {
@@ -255,131 +260,130 @@ node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
 		expr->type = node_var;
 		node->lhs = expr;
 	}
-	else {
-		LOG(PRN_GRN, "ERROR");
-	}
-	LOG(PRN_GRN, "lhs set");
 	++*i;
 	switch(tokens.value[*i].type) {
 	case token_op_plus:
 		LOG(PRN_GRN, "op is plus");
 		node->op = bin_expr_add;
+		LOG(PRN_GRN, "op: %d", node->op);
 		break;
 	default:
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	node->rhs = parse_expr(tokens, i);
-	LOG(PRN_GRN, "lhs set");
-
-	LOG(PRN_GRN, "end");
-	return node;
-}
-
-node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	if(tokens.value[*i].type != token_keyword_int) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	if(tokens.value[*i].type != token_identifier) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	token_t ident = tokens.value[*i];
-	LOG(PRN_GRN, "identifier: %s", tokens.value[*i].value);
-	++*i;
-	if(tokens.value[*i].type != token_op_equals) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	if(tokens.value[*i].type != token_int_literal && tokens.value[*i].type != token_identifier) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	node_expr_t *expr = parse_expr(tokens, i);
-	++*i;
-	if(tokens.value[*i].type != token_op_semicolon) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	stack_size += sizeof(int);
-	node_var_t *var_node = malloc(sizeof(node_var_t));
-	*var_node = (node_var_t) {
-		.stack_offset = stack_size,
-		.token = ident
-	};
-	LIST_APPEND(variable_lookup, *var_node);
-	LOG(PRN_GRN, "var_node set");
-	
-	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
-	*decl_node = (node_var_decl_t) {
-		.token = ident,
-		.expr_node = expr,
-		.stack_offset = stack_size
-	};
-
-	LOG(PRN_GRN, "end");
-	return decl_node;
-}
-
-node_label_t *parse_label(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	++*i;
-	node_label_t *node = malloc(sizeof(node_label_t));
-	*node = (node_label_t) {
-		.token = tokens.value[*i - 1]
-	};
-
-	LOG(PRN_GRN, "end");
-	return node;
-}
-
-node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	++*i;
-	if(tokens.value[*i].type != token_identifier) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	if(tokens.value[*i].type != token_op_semicolon) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	node_goto_t *node = malloc(sizeof(node_goto_t));
-	*node = (node_goto_t) {
-		.token = tokens.value[*i - 1]
-	};
-
-	LOG(PRN_GRN, "end");
-	return node;
-}
-
-node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	node_assignment_t *node = malloc(sizeof(node_assignment_t));
-	node->lhs = parse_var(tokens, i);
-	LOG(PRN_GRN, "set lhs");
-	++*i;
-	if(tokens.value[*i].type != token_op_equals) {
-		LOG(PRN_GRN, "ERROR");
+		printf("\nerror invalid op binexpr\n");
 		exit(1);
 	}
 	++*i;
 	node->rhs = parse_expr(tokens, i);
 	LOG(PRN_GRN, "rhs set");
 
-	LOG(PRN_GRN, "end");
+	return node;
+}
+
+node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "called parse_var_decl()");
+	if(tokens.value[*i].type != token_keyword_int) {
+		printf("\nerror invalid type\n");
+		exit(1);
+	}
+	++*i;
+	if(tokens.value[*i].type != token_identifier) {
+		printf("\nerror no identifier\n");
+		exit(1);
+	}
+	token_t ident = tokens.value[*i];
+	++*i;
+	if(tokens.value[*i].type != token_op_equals) {
+		printf("\nerror no equals\n");
+		exit(1);
+	}
+	++*i;
+	if(tokens.value[*i].type != token_int_literal && tokens.value[*i].type != token_identifier) {
+		printf("\nerror no int lit\n");
+		exit(1);
+	}
+	node_expr_t *expr = parse_expr(tokens, i);
+	++*i;
+	if(tokens.value[*i].type != token_op_semicolon) {
+		printf("\nerror no semicolon\n");
+		exit(1);
+	}
+	stack_size += sizeof(int);
+	LOG(PRN_GRN, "stack_size incremented");
+	node_var_t *var_node = malloc(sizeof(node_var_t));
+	LOG(PRN_GRN, "memory allocated");
+	*var_node = (node_var_t) {
+		.stack_offset = stack_size,
+		.token = ident
+	};
+	LOG(PRN_GRN, "stack offset set");
+	LOG(PRN_GRN, "token set");
+	LIST_APPEND(variable_lookup, *var_node);
+	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
+	LOG(PRN_GRN, "memory allocated");
+	*decl_node = (node_var_decl_t) {
+		.token = ident,
+		.expr_node = expr,
+		.stack_offset = stack_size
+	};
+	LOG(PRN_GRN, "token set");
+	LOG(PRN_GRN, "expr set");
+	LOG(PRN_GRN, "stack offset set");
+	return decl_node;
+}
+
+node_label_t *parse_label(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "called parse_label()");
+	++*i;
+	node_label_t *node = malloc(sizeof(node_label_t));
+	LOG(PRN_GRN, "memory allocated");
+	*node = (node_label_t) {
+		.token = tokens.value[*i - 1]
+	};
+	LOG(PRN_GRN, "token set");
+	return node;
+}
+
+node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "called parse_goto()");
+	++*i;
+	if(tokens.value[*i].type != token_identifier) {
+		printf("error no identifier in goto\n");
+		exit(1);
+	}
+	++*i;
+	if(tokens.value[*i].type != token_op_semicolon) {
+		printf("error missing semicolon in goto\n");
+		exit(1);
+	}
+	node_goto_t *node = malloc(sizeof(node_goto_t));
+	LOG(PRN_GRN, "memory allocated");
+	*node = (node_goto_t) {
+		.token = tokens.value[*i - 1]
+	};
+	LOG(PRN_GRN, "token set");
+	return node;
+}
+
+node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "called parse_assignment()");
+	node_assignment_t *node = malloc(sizeof(node_assignment_t));
+	LOG(PRN_GRN, "memory allocated");
+	node->lhs = parse_var(tokens, i);
+	LOG(PRN_GRN, "set lhs");
+	++*i;
+	if(tokens.value[*i].type != token_op_equals) {
+		printf("missing equals in assignmen\n");
+		exit(1);
+	}
+	++*i;
+	node->rhs = parse_expr(tokens, i);
+	LOG(PRN_GRN, "rhs set");
 	return node;
 }
 
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "called parse_statement()");
 	node_statement_t *node = malloc(sizeof(node_statement_t));
+	LOG(PRN_GRN, "memory allocated");
 	switch(tokens.value[*i].type) {
 	case token_keyword_return:
 		LOG(PRN_GRN, "detected keyword return");
@@ -427,12 +431,12 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 			return node;
 		}
 		else {
-			LOG(PRN_GRN, "ERROR");
+			printf("\nerror invalid identifier\n");
 			exit(1);
 		}
 		break;
 	default:
-		LOG(PRN_GRN, "ERROR");
+		printf("\nerror invalid parse_statement\n");
 		exit(1);
 	}
 	printf("impossible error parse_statement\n");
@@ -440,16 +444,14 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 }
 
 bool identifier_is_var(token_t token) {
-	LOG(PRN_GRN, "start");
+	LOG(PRN_GRN, "called identifier_is_var()");
 	for(size_t i = 0; i < variable_lookup.length; i++) {
 		if(!strcmp(token.value, variable_lookup.value[i].token.value)) {
 			LOG(PRN_GRN, "identifier is var");
-			LOG(PRN_GRN, "end");
 			return true;
 		}
 	}
 	LOG(PRN_GRN, "identifier is not var");
-	LOG(PRN_GRN, "end");
 	return false;
 }
 
