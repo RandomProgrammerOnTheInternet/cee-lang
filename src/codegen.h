@@ -143,17 +143,25 @@ void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i) {
 			LOG(PRN_YLW, "lhs is int_lit");
 			fprintf(*file, "	mov eax, %s\n", expr.bin_expr_node->lhs->int_lit_node->token.value);
 		}
-		else {
+		else if(expr.bin_expr_node->lhs->type == node_var) {
 			LOG(PRN_YLW, "lhs is var");
 			fprintf(*file, "	mov eax, dword ptr [rsp-%zu]\n", expr.bin_expr_node->lhs->var_node->stack_offset);
+		}
+		else {
+			LOG(PRN_YLW, "ERROR");
+			exit(1);
 		}
 		if(expr.bin_expr_node->rhs->type == node_int_lit) {
 			LOG(PRN_YLW, "rhs is int_lit");
 			fprintf(*file, "	mov ecx, %s\n", expr.bin_expr_node->rhs->int_lit_node->token.value);
 		}
-		else {
+		else if(expr.bin_expr_node->rhs->type == node_var) {
 			LOG(PRN_YLW, "rhs is var");
 			fprintf(*file, "	mov ecx, dword ptr [rsp-%zu]\n", expr.bin_expr_node->rhs->var_node->stack_offset);
+		}
+		else {
+			LOG(PRN_YLW, "ERROR");
+			exit(1);
 		}
 		fprintf(*file, "	add eax, ecx\n");
 		break;
