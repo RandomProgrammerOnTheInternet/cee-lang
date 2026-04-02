@@ -23,24 +23,23 @@ x.value[x.length - 1] = y
 
 #define LIST_FREE(x) if(x.value != NULL) free(x.value)
 
+// arenas
+#define NEW_ARENA(x) struct arena_ ## x {x *value; size_t length; size_t cap;}
+
+#define ARENA(x) struct arena_ ## x
+
+#define INIT_ARENA(x, y) \
+x.length = 0; \
+x.cap = y; \
+x.value = malloc(x.length * sizeof(typeof(*x.value)))
+
+#define ARENA_APPEND(x, y) \
+x.value[x.length] = y; \
+x.length++
+
+
 #endif // DS_H
 
 #ifdef DS_IMPL
-
-typedef struct arena_t {
-	void *buf;
-	size_t max_size;
-	size_t ptr;
-} arena_t;
-
-void arena_push(arena_t *arena, void *item, size_t size) {
-	if(size + arena->ptr > arena->max_size) {
-		printf("error too much mem used\n");
-		exit(1);
-		//arena->buf = realloc(arena->buf, max_size * 2);
-	}
-	arena->buf[ptr] = item;
-	arena->ptr += size;
-}
 
 #endif

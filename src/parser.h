@@ -92,11 +92,11 @@ typedef struct node_base_t {
 	};
 } node_base_t;
 
-NEW_LIST(node_var_t);
+NEW_ARENA(node_var_t);
 NEW_LIST(node_base_t);
 
 size_t stack_size = 0;
-LIST(node_var_t) variable_lookup;
+ARENA(node_var_t) variable_lookup;
 
 LIST(node_base_t) parse(LIST(token_t) tokens);
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
@@ -118,7 +118,7 @@ bool identifier_is_var(token_t token);
 
 LIST(node_base_t) parse(LIST(token_t) tokens) {
 	LOG(PRN_GRN, "start");
-	INIT_LIST(variable_lookup, 0);
+	INIT_ARENA(variable_lookup, 1024);
 	LIST(node_base_t) base_node;
 	INIT_LIST(base_node, 0);
 
@@ -314,7 +314,7 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		.token = ident
 	};
 	node_var_t temp_var_node = *var_node;
-	LIST_APPEND(variable_lookup, temp_var_node);
+	ARENA_APPEND(variable_lookup, temp_var_node);
 	LOG(PRN_GRN, "var_node set");
 	
 	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
@@ -323,6 +323,7 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		.expr_node = expr,
 		.stack_offset = stack_size
 	};
+	LOG(PRN_WHT, "%zu", decl_node->expr_node->var_node->stack_offset);
 
 	LOG(PRN_GRN, "end");
 	return decl_node;
