@@ -29,6 +29,18 @@ x.value[x.length - 1] = y
 
 typedef struct arena_t {
 	void *buf;
+	size_t max_size;
+	size_t ptr;
 } arena_t;
+
+void arena_push(arena_t *arena, void *item, size_t size) {
+	if(size + arena->ptr > arena->max_size) {
+		printf("error too much mem used\n");
+		exit(1);
+		//arena->buf = realloc(arena->buf, max_size * 2);
+	}
+	arena->buf[ptr] = item;
+	arena->ptr += size;
+}
 
 #endif

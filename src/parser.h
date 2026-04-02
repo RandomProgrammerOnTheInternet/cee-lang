@@ -313,7 +313,8 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		.stack_offset = stack_size,
 		.token = ident
 	};
-	LIST_APPEND(variable_lookup, *var_node);
+	node_var_t temp_var_node = *var_node;
+	LIST_APPEND(variable_lookup, temp_var_node);
 	LOG(PRN_GRN, "var_node set");
 	
 	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
