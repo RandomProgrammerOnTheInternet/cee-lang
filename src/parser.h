@@ -39,7 +39,7 @@ typedef struct node_expr_t {
 	enum node_type type;
 	union {
 		node_int_lit_t *int_lit_node;
-		node_var_t *var_node;
+		node_var_t var_node;
 		node_bin_expr_t *bin_expr_node;
 	};
 } node_expr_t;
@@ -57,7 +57,7 @@ typedef struct node_var_decl_t {
 } node_var_decl_t;
 
 typedef struct node_assignment_t {
-	node_var_t *lhs;
+	node_var_t lhs;
 	node_expr_t *rhs;
 } node_assignment_t;
 
@@ -101,7 +101,7 @@ LIST(node_var_t) variable_lookup;
 LIST(node_base_t) parse(LIST(token_t) tokens);
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
 node_return_t *parse_return(LIST(token_t) tokens, size_t *i);
-node_var_t *parse_var(LIST(token_t) tokens, size_t *i);
+node_var_t parse_var(LIST(token_t) tokens, size_t *i);
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i);
 node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i);
 node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i);
@@ -176,14 +176,14 @@ node_return_t *parse_return(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
-node_var_t *parse_var(LIST(token_t) tokens, size_t *i) {
+node_var_t parse_var(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	LOG(PRN_GRN, "variable_lookup.length = %zu", variable_lookup.length);
 	for(size_t j = 0; j < variable_lookup.length; j++) {
 		LOG(PRN_GRN, "loop: %s", variable_lookup.value[j].token.value);
 		if(!strcmp(tokens.value[*i].value, variable_lookup.value[j].token.value)) {
 			LOG(PRN_GRN, "end");
-			return &variable_lookup.value[j];
+			return variable_lookup.value[j];
 		}
 	}
 	LOG(PRN_GRN, "ERROR");
@@ -245,7 +245,7 @@ node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
 		LOG(PRN_GRN, "lhs is int_lit");
 		node_expr_t *expr = malloc(sizeof(node_expr_t));
 		expr->int_lit_node = parse_int_lit(tokens, i);
-		expr->type = node_var;
+		expr->type = node_int_lit;
 		node->lhs = expr;
 	}
 	else if(tokens.value[*i].type == token_identifier) {
@@ -307,12 +307,11 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		exit(1);
 	}
 	stack_size += sizeof(int);
-	node_var_t *var_node = malloc(sizeof(node_var_t));
-	*var_node = (node_var_t) {
+	node_var_t var_node = (node_var_t) {
 		.stack_offset = stack_size,
 		.token = ident
 	};
-	LIST_APPEND(variable_lookup, *var_node);
+	LIST_APPEND(variable_lookup, var_node);
 	LOG(PRN_GRN, "var_node set");
 	
 	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));

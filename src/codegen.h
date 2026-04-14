@@ -69,7 +69,7 @@ void generate_return(LIST(node_base_t) node, FILE **file, size_t *i) {
 	}
 	else {
 		LOG(PRN_YLW, "expr is var");
-		fprintf(*file, "	mov edi, dword ptr [rsp-%zu] # generate_return\n", node.value[*i].statement_node->return_node->expr_node->var_node->stack_offset);
+		fprintf(*file, "	mov edi, dword ptr [rsp-%zu] # generate_return\n", node.value[*i].statement_node->return_node->expr_node->var_node.stack_offset);
 	}
 
 	fprintf(*file, "	mov rax, 60 # generate_return\n");
@@ -86,7 +86,7 @@ void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i) {
 	}
 	else if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_var) {
 		LOG(PRN_YLW, "expr is var");
-		fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_var_decl\n", node.value[*i].statement_node->var_decl_node->expr_node->var_node->stack_offset);
+		fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_var_decl\n", node.value[*i].statement_node->var_decl_node->expr_node->var_node.stack_offset);
 		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_var_decl\n", node.value[*i].statement_node->var_decl_node->stack_offset);
 	}
 	else if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_bin_expr) {
@@ -114,18 +114,18 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 	LOG(PRN_YLW, "called generate_assignment()");
 	if(node.value[*i].statement_node->assignment_node->rhs->type == node_var) {
 		LOG(PRN_YLW, "rhs is var");
-		fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs->stack_offset);
-		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_assignment\n", node.value[*i].statement_node->assignment_node->rhs->var_node->stack_offset);
+		fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs.stack_offset);
+		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_assignment\n", node.value[*i].statement_node->assignment_node->rhs->var_node.stack_offset);
 	}
 	else if(node.value[*i].statement_node->assignment_node->rhs->type == node_int_lit) {
 		LOG(PRN_YLW, "rhs is int_lit");
-		fprintf(*file, "	mov dword ptr [rsp-%zu], %s # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs->stack_offset,
+		fprintf(*file, "	mov dword ptr [rsp-%zu], %s # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs.stack_offset,
 			node.value[*i].statement_node->assignment_node->rhs->int_lit_node->token.value);
 	}
 	else if(node.value[*i].statement_node->assignment_node->rhs->type == node_bin_expr) {
 		LOG(PRN_YLW, "rhs is bin_expr");
 		generate_bin_expr(*node.value[*i].statement_node->assignment_node->rhs, file, i);
-		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs->stack_offset);
+		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs.stack_offset);
 	}
 	else {
 		printf("\ncodegen error assignment\n");
@@ -145,7 +145,7 @@ void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i) {
 		}
 		else if(expr.bin_expr_node->lhs->type == node_var) {
 			LOG(PRN_YLW, "lhs is var");
-			fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->lhs->var_node->stack_offset);
+			fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->lhs->var_node.stack_offset);
 		}
 		else {
 			LOG(PRN_YLW, "ERROR");
@@ -157,7 +157,7 @@ void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i) {
 		}
 		else if(expr.bin_expr_node->rhs->type == node_var) {
 			LOG(PRN_YLW, "rhs is var");
-			fprintf(*file, "	mov ecx, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->rhs->var_node->stack_offset);
+			fprintf(*file, "	mov ecx, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->rhs->var_node.stack_offset);
 		}
 		else {
 			LOG(PRN_YLW, "ERROR");
