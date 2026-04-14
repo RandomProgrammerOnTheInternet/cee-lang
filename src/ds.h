@@ -23,21 +23,6 @@ x.value[x.length - 1] = y
 
 #define LIST_FREE(x) if(x.value != NULL) free(x.value)
 
-// arenas
-#define NEW_ARENA(x) struct arena_ ## x {x *value; size_t length; size_t cap;}
-
-#define ARENA(x) struct arena_ ## x
-
-#define INIT_ARENA(x, y) \
-x.length = 0; \
-x.cap = y; \
-x.value = malloc(x.length * sizeof(typeof(*x.value)))
-
-#define ARENA_APPEND(x, y) \
-x.value[x.length] = y; \
-x.length++
-
-
 #endif // DS_H
 
 #ifdef DS_IMPL

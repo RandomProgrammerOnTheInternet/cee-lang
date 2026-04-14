@@ -92,11 +92,11 @@ typedef struct node_base_t {
 	};
 } node_base_t;
 
-NEW_ARENA(node_var_t);
+NEW_LIST(node_var_t);
 NEW_LIST(node_base_t);
 
 size_t stack_size = 0;
-ARENA(node_var_t) variable_lookup;
+LIST(node_var_t) variable_lookup;
 
 LIST(node_base_t) parse(LIST(token_t) tokens);
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
@@ -118,7 +118,7 @@ bool identifier_is_var(token_t token);
 
 LIST(node_base_t) parse(LIST(token_t) tokens) {
 	LOG(PRN_GRN, "start");
-	INIT_ARENA(variable_lookup, 1024);
+	INIT_LIST(variable_lookup, 0);
 	LIST(node_base_t) base_node;
 	INIT_LIST(base_node, 0);
 
@@ -165,7 +165,7 @@ node_return_t *parse_return(LIST(token_t) tokens, size_t *i) {
 	++*i;
 	node_return_t *node = malloc(sizeof(node_return_t));
 	*node = (node_return_t) {
-		.expr_node = parse_expr(tokens, i)
+		.expr_node= parse_expr(tokens, i)
 	};
 	++*i;
 	if(tokens.value[*i].type != token_op_semicolon) {
@@ -245,7 +245,7 @@ node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
 		LOG(PRN_GRN, "lhs is int_lit");
 		node_expr_t *expr = malloc(sizeof(node_expr_t));
 		expr->int_lit_node = parse_int_lit(tokens, i);
-		expr->type = node_int_lit;
+		expr->type = node_var;
 		node->lhs = expr;
 	}
 	else if(tokens.value[*i].type == token_identifier) {
@@ -271,7 +271,7 @@ node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
 	}
 	++*i;
 	node->rhs = parse_expr(tokens, i);
-	LOG(PRN_GRN, "rhs set");
+	LOG(PRN_GRN, "lhs set");
 
 	LOG(PRN_GRN, "end");
 	return node;
@@ -307,14 +307,12 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		exit(1);
 	}
 	stack_size += sizeof(int);
-	LOG(PRN_GRN, "stack_size: %zu", stack_size);
 	node_var_t *var_node = malloc(sizeof(node_var_t));
 	*var_node = (node_var_t) {
 		.stack_offset = stack_size,
 		.token = ident
 	};
-	node_var_t temp_var_node = *var_node;
-	ARENA_APPEND(variable_lookup, temp_var_node);
+	LIST_APPEND(variable_lookup, *var_node);
 	LOG(PRN_GRN, "var_node set");
 	
 	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
@@ -323,7 +321,6 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		.expr_node = expr,
 		.stack_offset = stack_size
 	};
-	LOG(PRN_WHT, "%zu", decl_node->expr_node->var_node->stack_offset);
 
 	LOG(PRN_GRN, "end");
 	return decl_node;
