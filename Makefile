@@ -5,7 +5,9 @@ INCFLAGS = -iquotesrc -I.
 CCFLAGS += -std=c23
 CCFLAGS += -g
 CCFLAGS += -O0
+#CCFLAGS += -fsanitize=undefined,address,leak
 CCFLAGS += -Wall
+CCFLAGS += -Wextra
 LDFLAGS += -lm
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
