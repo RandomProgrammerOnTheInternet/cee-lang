@@ -20,7 +20,8 @@ typedef enum node_type : u8 {
 } node_type;
 
 typedef enum bin_expr_type : u8 {
-	bin_expr_add = 0
+	bin_expr_add = 0,
+	bin_expr_sub
 } bin_expr_type;
 
 typedef struct node_int_lit_t {
@@ -197,7 +198,7 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	switch(tokens.value[*i].type) {
 	case token_int_literal:
 		LOG(PRN_GRN, "int_lit");
-		if(op == token_op_plus) {
+		if(op == token_op_plus || op == token_op_minus) {
 			LOG(PRN_GRN, "bin_expr");
 			*node = (node_expr_t) {
 				.type = node_bin_expr,
@@ -214,7 +215,7 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 		break;
 	case token_identifier:
 		LOG(PRN_GRN, "var");
-		if(op == token_op_plus) {
+		if(op == token_op_plus || op == token_op_minus) {
 			LOG(PRN_GRN, "bin_expr");
 			*node = (node_expr_t) {
 				.type = node_bin_expr,
@@ -264,6 +265,10 @@ node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
 	case token_op_plus:
 		LOG(PRN_GRN, "op is plus");
 		node->op = bin_expr_add;
+		break;
+	case token_op_minus:
+		LOG(PRN_GRN, "op is minus");
+		node->op = bin_expr_sub;
 		break;
 	default:
 		LOG(PRN_GRN, "ERROR");
