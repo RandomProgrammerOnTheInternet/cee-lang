@@ -11,7 +11,7 @@ void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i);
 void generate_label(LIST(node_base_t) node, FILE **file, size_t *i);
 void generate_goto(LIST(node_base_t) node, FILE **file, size_t *i);
 void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i);
-void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i);
+void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start);
 #endif // CODEGEN_H
 
 #ifdef CODEGEN_IMPL
@@ -64,7 +64,7 @@ void generate_return(LIST(node_base_t) node, FILE **file, size_t *i) {
 	}
 	else if(node.value[*i].statement_node->return_node->expr_node->type == node_bin_expr) {
 		LOG(PRN_YLW, "expr is bin_expr");
-		generate_bin_expr(*node.value[*i].statement_node->return_node->expr_node, file, i);
+		generate_bin_expr(*node.value[*i].statement_node->return_node->expr_node, file, i, true);
 		fprintf(*file, "mov edi, eax # generate_return\n");
 	}
 	else {
@@ -91,7 +91,7 @@ void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i) {
 	}
 	else if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_bin_expr) {
 		LOG(PRN_YLW, "expr is bin_expr");
-		generate_bin_expr(*node.value[*i].statement_node->var_decl_node->expr_node, file, i);
+		generate_bin_expr(*node.value[*i].statement_node->var_decl_node->expr_node, file, i, true);
 		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_var_decl\n", node.value[*i].statement_node->var_decl_node->stack_offset);
 	}
 	else {
@@ -124,7 +124,7 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 	}
 	else if(node.value[*i].statement_node->assignment_node->rhs->type == node_bin_expr) {
 		LOG(PRN_YLW, "rhs is bin_expr");
-		generate_bin_expr(*node.value[*i].statement_node->assignment_node->rhs, file, i);
+		generate_bin_expr(*node.value[*i].statement_node->assignment_node->rhs, file, i, true);
 		fprintf(*file, "	mov dword ptr [rsp-%zu], eax # generate_assignment\n", node.value[*i].statement_node->assignment_node->lhs.stack_offset);
 	}
 	else {
@@ -133,65 +133,100 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 	}
 }
 
-void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i) {
+void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start) {
 	LOG(PRN_YLW, "called generate_bin_expr()");
 	LOG(PRN_YLW, "%d", bin_expr_add);
 	switch(expr.bin_expr_node->op) {
 	case bin_expr_add:
 		LOG(PRN_YLW, "op is add");
-		if(expr.bin_expr_node->lhs->type == node_int_lit) {
-			LOG(PRN_YLW, "lhs is int_lit");
-			fprintf(*file, "	mov eax, %s # generate_bin_expr\n", expr.bin_expr_node->lhs->int_lit_node->token.value);
-		}
-		else if(expr.bin_expr_node->lhs->type == node_var) {
-			LOG(PRN_YLW, "lhs is var");
-			fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->lhs->var_node.stack_offset);
-		}
-		else {
-			LOG(PRN_YLW, "ERROR");
-			exit(1);
+		if(is_start) {
+			if(expr.bin_expr_node->lhs->type == node_int_lit) {
+				LOG(PRN_YLW, "lhs is int_lit");
+				fprintf(*file, "	mov eax, %s # generate_bin_expr\n",
+				expr.bin_expr_node->lhs->int_lit_node->token.value);
+			}
+			else if(expr.bin_expr_node->lhs->type == node_var) {
+				LOG(PRN_YLW, "lhs is var");
+				fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_bin_expr\n",
+				expr.bin_expr_node->lhs->var_node.stack_offset);
+			}
+			else {
+				LOG(PRN_YLW, "ERROR");
+				exit(1);
+			}
 		}
 		if(expr.bin_expr_node->rhs->type == node_int_lit) {
 			LOG(PRN_YLW, "rhs is int_lit");
-			fprintf(*file, "	mov ecx, %s # generate_bin_expr\n", expr.bin_expr_node->rhs->int_lit_node->token.value);
+			fprintf(*file, "	add eax, %s # generate_bin_expr\n",
+			expr.bin_expr_node->rhs->int_lit_node->token.value);
 		}
 		else if(expr.bin_expr_node->rhs->type == node_var) {
 			LOG(PRN_YLW, "rhs is var");
-			fprintf(*file, "	mov ecx, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->rhs->var_node.stack_offset);
+			fprintf(*file, "	add eax, dword ptr [rsp-%zu] # generate_bin_expr\n",
+			expr.bin_expr_node->rhs->var_node.stack_offset);
+		}
+		else if(expr.bin_expr_node->rhs->type == node_bin_expr) {
+			LOG(PRN_YLW, "rhs is bin_expr");
+			if(expr.bin_expr_node->rhs->bin_expr_node->lhs->type == node_int_lit) {
+				fprintf(*file, "	add eax, %s # generate_bin_expr\n",
+				expr.bin_expr_node->rhs->bin_expr_node->lhs->int_lit_node->token.value);
+			}
+			else if(expr.bin_expr_node->rhs->bin_expr_node->lhs->type == node_var) {
+				fprintf(*file, "	add eax, dword ptr [rsp-%zu] # generate_bin_expr\n",
+				expr.bin_expr_node->rhs->bin_expr_node->lhs->var_node.stack_offset);
+			}
+			generate_bin_expr(*expr.bin_expr_node->rhs, file, i, false);
 		}
 		else {
 			LOG(PRN_YLW, "ERROR");
 			exit(1);
 		}
-		fprintf(*file, "	add eax, ecx # generate_bin_expr\n");
+
 		break;
 	case bin_expr_sub:
 		LOG(PRN_YLW, "op is sub");
-		if(expr.bin_expr_node->lhs->type == node_int_lit) {
-			LOG(PRN_YLW, "lhs is int_lit");
-			fprintf(*file, "	mov eax, %s # generate_bin_expr\n", expr.bin_expr_node->lhs->int_lit_node->token.value);
-		}
-		else if(expr.bin_expr_node->lhs->type == node_var) {
-			LOG(PRN_YLW, "lhs is var");
-			fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->lhs->var_node.stack_offset);
-		}
-		else {
-			LOG(PRN_YLW, "ERROR");
-			exit(1);
+		if(is_start) {
+			if(expr.bin_expr_node->lhs->type == node_int_lit) {
+				LOG(PRN_YLW, "lhs is int_lit");
+				fprintf(*file, "	mov eax, %s # generate_bin_expr\n",
+				expr.bin_expr_node->lhs->int_lit_node->token.value);
+			}
+			else if(expr.bin_expr_node->lhs->type == node_var) {
+				LOG(PRN_YLW, "lhs is var");
+				fprintf(*file, "	mov eax, dword ptr [rsp-%zu] # generate_bin_expr\n",
+				expr.bin_expr_node->lhs->var_node.stack_offset);
+			}
+			else {
+				LOG(PRN_YLW, "ERROR");
+				exit(1);
+			}
 		}
 		if(expr.bin_expr_node->rhs->type == node_int_lit) {
 			LOG(PRN_YLW, "rhs is int_lit");
-			fprintf(*file, "	mov ecx, %s # generate_bin_expr\n", expr.bin_expr_node->rhs->int_lit_node->token.value);
+			fprintf(*file, "	sub eax, %s # generate_bin_expr\n",
+			expr.bin_expr_node->rhs->int_lit_node->token.value);
 		}
 		else if(expr.bin_expr_node->rhs->type == node_var) {
 			LOG(PRN_YLW, "rhs is var");
-			fprintf(*file, "	mov ecx, dword ptr [rsp-%zu] # generate_bin_expr\n", expr.bin_expr_node->rhs->var_node.stack_offset);
+			fprintf(*file, "	sub eax, dword ptr [rsp-%zu] # generate_bin_expr\n",
+			expr.bin_expr_node->rhs->var_node.stack_offset);
+		}
+		else if(expr.bin_expr_node->rhs->type == node_bin_expr) {
+			LOG(PRN_YLW, "rhs is bin_expr");
+			if(expr.bin_expr_node->rhs->bin_expr_node->lhs->type == node_int_lit) {
+				fprintf(*file, "	sub eax, %s # generate_bin_expr\n",
+				expr.bin_expr_node->rhs->bin_expr_node->lhs->int_lit_node->token.value);
+			}
+			else if(expr.bin_expr_node->rhs->bin_expr_node->lhs->type == node_var) {
+				fprintf(*file, "	sub eax, dword ptr [rsp-%zu] # generate_bin_expr\n",
+				expr.bin_expr_node->rhs->bin_expr_node->lhs->var_node.stack_offset);
+			}
+			generate_bin_expr(*expr.bin_expr_node->rhs, file, i, false);
 		}
 		else {
 			LOG(PRN_YLW, "ERROR");
 			exit(1);
 		}
-		fprintf(*file, "	sub eax, ecx # generate_bin_expr\n");
 		break;
 	default:
 		printf("\ngenerate_bin_expr\n");
