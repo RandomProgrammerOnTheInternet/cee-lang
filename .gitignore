@@ -1,0 +1,5 @@
+*.o
+ceec
+out.asm
+compile_commands.json
+a.out
