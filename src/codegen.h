@@ -7,11 +7,12 @@
 #include "lexer.h"
 #include "parser.h"
 
-FILE *generate_asm(LIST(node_base_t) node);
-void generate_return(LIST(node_base_t) node, FILE **file, size_t *i);
-void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i);
-void generate_label(LIST(node_base_t) node, FILE **file, size_t *i);
-void generate_goto(LIST(node_base_t) node, FILE **file, size_t *i);
-void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i);
-void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start);
+
+enum backend : u8 {
+    backend_x86,
+    backend_arm64,
+};
+
+FILE *generate_asm(LIST(node_base_t) node, enum backend backend);
+
 #endif // CODEGEN_H

@@ -49,10 +49,15 @@ void compile(char **argv) {
 	for(size_t i = 0; i < variable_lookup.length; i++) {
 		LOG(PRN_BLU, "variable name: %s | stack offset: %zu", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
 	}
-	FILE *asm_file = generate_asm(base_node);
+	FILE *asm_file = generate_asm(base_node, DEFAULT_BACKEND);
 	LOG(PRN_BLU, "generated asm");
 	fclose(asm_file);
-	// system("as -o out.o out.asm && ld out.o");
+#ifndef __APPLE__
+	system("as -o out.o out.asm");
+	system("ld out.o");
+#else
+	system("cc out.asm");
+#endif
 	LOG(PRN_BLU, "assembled");
 
 	free(src_str);

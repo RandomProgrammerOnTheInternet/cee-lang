@@ -46,6 +46,20 @@ typedef enum error_code : u16 {
 	error_missing_semicolon
 } error_code;
 
+#if defined(__x86_64__) || defined(_M_X64)
+#define DEFAULT_BACKEND backend_x86
+#endif // x86
+
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+#define DEFAULT_BACKEND backend_arm64
+#endif // aarch64/arm64
+
+#ifndef DEFAULT_BACKEND
+#warning no default backend for this arch, defaulting to x86
+#define DEFAULT backend_x86
+#endif // DEFAULT_BACKEND
+
 [[noreturn]] void error(error_code code, char *message);
 char *substr(char *str, u64 start, u64 end);
 
