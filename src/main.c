@@ -9,13 +9,13 @@
 #include "util.h"
 
 char *read_whole_file(FILE *f);
-void compile(char **argv);
+void compile(int argc, char **argv);
 
 int main(int argc, char **argv) {
 	if(argc == 1) {
 		error(error_no_file, "you need a file bro");
 	}
-	compile(argv);
+	compile(argc, argv);
 	LOG(PRN_BLU, "ended compilation");
 
 	return 0;
@@ -32,11 +32,28 @@ char *read_whole_file(FILE *f) {
 	return str;
 }
 
-void compile(char **argv) {
+void compile(int argc, char **argv) {
+	enum backend backend = DEFAULT_BACKEND;
 	FILE *src_file = NULL;
 	if(!(src_file = fopen(argv[1], "r"))) {
 		error(error_invalid_file, "invalid file");
 	}
+
+	int argi = 1 /* + 1 */;
+	while((argi + 1) < argc) {
+		argi++;
+		const char *arg = argv[argi];
+		if(strcmp(arg, "-x86") == 0) {
+			backend = backend_x86;
+			continue;
+		}
+		if(strcmp(arg, "-arm64") == 0) {
+			backend = backend_arm64;
+			continue;
+		}
+		printf("unknown argument '%s'\n", arg);
+	}
+	
 	LOG(PRN_BLU, "opened file");
 	char *src_str = read_whole_file(src_file);
 	LOG(PRN_BLU, "converted file to string:\n%s", src_str);
@@ -49,15 +66,17 @@ void compile(char **argv) {
 	for(size_t i = 0; i < variable_lookup.length; i++) {
 		LOG(PRN_BLU, "variable name: %s | stack offset: %zu", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
 	}
-	FILE *asm_file = generate_asm(base_node, DEFAULT_BACKEND);
+	FILE *asm_file = generate_asm(base_node, backend);
 	LOG(PRN_BLU, "generated asm");
 	fclose(asm_file);
-#ifndef __APPLE__
-	system("as -o out.o out.asm");
-	system("ld out.o");
+
+	if(backend == DEFAULT_BACKEND) {
+#ifdef __APPLE__
+		system("cc out.asm");
 #else
-	system("cc out.asm");
+		system("as -o out.o out.asm && ld out.o");
 #endif
+	}
 	LOG(PRN_BLU, "assembled");
 
 	free(src_str);
