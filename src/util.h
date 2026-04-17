@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
-#ifdef DEBUG
 #define PRN_BLK "\e[0;30m"
 #define PRN_RED "\e[0;31m"
 #define PRN_GRN "\e[0;32m"
@@ -14,10 +14,14 @@
 #define PRN_PUR "\e[0;35m"
 #define PRN_CYN "\e[0;36m"
 #define PRN_WHT "\e[0;37m"
+
+#if defined(DEBUG) && DEBUG == 1
 #define LOG(color, msg, ...) \
 printf("%s%d %s: %s", color, __LINE__, __func__, PRN_WHT); \
 printf(msg __VA_OPT__(,) __VA_ARGS__); \
 printf("\n")
+#else
+#define LOG(color, msg, ...) 
 #endif // DEBUG
 
 typedef int8_t i8;
@@ -46,17 +50,3 @@ typedef enum error_code : u16 {
 char *substr(char *str, u64 start, u64 end);
 
 #endif // UTIL_H
-
-#ifdef UTIL_IMPL
-
-[[noreturn]] void error(u16 code, char *message) {
-	fprintf(stderr, "skill issue #%hu: ", code);
-	fprintf(stderr, "%s\n", message);
-	exit(1);
-}
-
-char *substr(char *str, u64 start, u64 end) {
-	return strndup(str + start, end - start);
-}
-
-#endif // UTIL_IMPL

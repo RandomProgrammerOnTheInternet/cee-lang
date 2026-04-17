@@ -1,0 +1,31 @@
+#include "pp.h"
+
+char *remove_line(char *str, u64 start, u64 *i) {
+	while(str[*i] != '\0' && str[*i] != '\n') {
+		++*i;
+	}
+	char *str1 = substr(str, 0, start - 1);
+	char *str2 = substr(str, *i, strlen(str) - 1);
+	char *res = strcpy(str1, str2);
+	free(str2);
+	free(str);
+	return res;
+}
+
+char *remove_comments(char *str) {
+	for(u64 i = 0; str[i]; i++) {
+		if(str[i] == '/' && str[i + 1] == '/') {
+			u64 start = i;
+			i++;
+			str = remove_line(str, start, &i);
+		}
+	}
+	return str;
+}
+
+char *preprocess(char *str) {
+	str = remove_comments(str);
+	return str;
+}
+
+

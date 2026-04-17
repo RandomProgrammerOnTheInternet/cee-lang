@@ -1,17 +1,11 @@
-#define DEBUG
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 // #define PP_IMPL
 // #include "pp.h"
-#define LEXER_IMPL
 #include "lexer.h"
-#define PARSER_IMPL
 #include "parser.h"
-#define CODEGEN_IMPL
 #include "codegen.h"
-#define UTIL_IMPL
 #include "util.h"
 
 char *read_whole_file(FILE *f);
@@ -58,7 +52,7 @@ void compile(char **argv) {
 	FILE *asm_file = generate_asm(base_node);
 	LOG(PRN_BLU, "generated asm");
 	fclose(asm_file);
-	system("as -o out.o out.asm && ld out.o");
+	// system("as -o out.o out.asm && ld out.o");
 	LOG(PRN_BLU, "assembled");
 
 	free(src_str);

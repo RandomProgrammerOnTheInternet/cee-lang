@@ -8,6 +8,7 @@ CCFLAGS += -O0
 #CCFLAGS += -fsanitize=undefined,address,leak
 CCFLAGS += -Wall
 CCFLAGS += -Wextra
+CCFLAGS += -DDEBUG
 LDFLAGS += -lm
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
