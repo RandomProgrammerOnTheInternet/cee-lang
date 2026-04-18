@@ -1,4 +1,4 @@
-int cool_var = 5;
-cool_var = 6;
-int cooler_var = cool_var;
-return cooler_var;
+int foo = 5 + 2;
+int bar = foo - 1;
+bar = bar + 4;
+return bar;
