@@ -21,10 +21,21 @@ typedef enum node_type : u8 {
 	node_bin_expr
 } node_type;
 
-typedef enum bin_expr_type : u8 {
-	bin_expr_add = 0,
-	bin_expr_sub
-} bin_expr_type;
+typedef enum op_type : u8 {
+	op_add = 0,
+	op_sub,
+	op_mul,
+	op_div,
+	op_mod
+} op_type;
+
+static const u8 op_precedence[] = {
+	2, // op_add
+	2, // op_sub
+	1, // op_mul
+	1, // op_div
+	1  // op_mod
+};
 
 typedef struct node_int_lit_t {
 	token_t token;
@@ -39,7 +50,7 @@ struct node_bin_expr_t;
 typedef struct node_bin_expr_t node_bin_expr_t;
 
 typedef struct node_expr_t {
-	enum node_type type;
+	node_type type;
 	union {
 		node_int_lit_t *int_lit_node;
 		node_var_t var_node;
@@ -48,7 +59,7 @@ typedef struct node_expr_t {
 } node_expr_t;
 
 struct node_bin_expr_t {
-	bin_expr_type op;
+	op_type op;
 	node_expr_t *lhs;
 	node_expr_t *rhs;
 };

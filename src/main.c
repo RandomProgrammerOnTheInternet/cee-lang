@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-// #define PP_IMPL
 // #include "pp.h"
 #include "lexer.h"
 #include "parser.h"
@@ -59,7 +58,7 @@ void compile(int argc, char **argv) {
 	LOG(PRN_BLU, "converted file to string:\n%s", src_str);
 
 	LIST(token_t) tokens = tokenize(src_str);
-	LOG(PRN_BLU, "converted string to %lu tokens", tokens.length);
+	LOG(PRN_BLU, "converted string to %zu tokens", tokens.length);
 
 	LIST(node_base_t) base_node = parse(tokens);
 	LOG(PRN_BLU, "converted tokens to nodes");

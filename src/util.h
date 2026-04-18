@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 
 #define PRN_BLK "\e[0;30m"

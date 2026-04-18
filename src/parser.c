@@ -150,11 +150,11 @@ node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
 	switch(tokens.value[*i].type) {
 	case token_op_plus:
 		LOG(PRN_GRN, "op is plus");
-		node->op = bin_expr_add;
+		node->op = op_add;
 		break;
 	case token_op_minus:
 		LOG(PRN_GRN, "op is minus");
-		node->op = bin_expr_sub;
+		node->op = op_sub;
 		break;
 	default:
 		LOG(PRN_GRN, "ERROR");

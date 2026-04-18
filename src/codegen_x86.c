@@ -126,9 +126,8 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 
 void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start) {
 	LOG(PRN_YLW, "called generate_bin_expr()");
-	LOG(PRN_YLW, "%d", bin_expr_add);
 	switch(expr.bin_expr_node->op) {
-	case bin_expr_add:
+	case op_add:
 		LOG(PRN_YLW, "op is add");
 		if(is_start) {
 			if(expr.bin_expr_node->lhs->type == node_int_lit) {
@@ -174,7 +173,7 @@ void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start) 
 		}
 
 		break;
-	case bin_expr_sub:
+	case op_sub:
 		LOG(PRN_YLW, "op is sub");
 		if(is_start) {
 			if(expr.bin_expr_node->lhs->type == node_int_lit) {

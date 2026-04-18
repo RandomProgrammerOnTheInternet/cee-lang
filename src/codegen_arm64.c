@@ -67,17 +67,17 @@ static void load_imm(FILE *file, int reg, int size, uint64_t imm_) {
 	int64_t imms = (int64_t)imm;
 
 	if(imms <= 4095 && imms >= -4095) {
-		fprintf(file, "\tmov %c%d, #%lld\n", reg_size[size], reg, imms);
+		fprintf(file, "\tmov %c%d, #%"PRId64"\n", reg_size[size], reg, imms);
 		return;
 	}
 
 	if(imm <= 65535) {
-		fprintf(file, "\tmovz %c%d, #%lld\n", reg_size[size], reg, imm);
+		fprintf(file, "\tmovz %c%d, #%"PRIu64"\n", reg_size[size], reg, imm);
 		return;
 	}
 
 	for(int i = 0; i < 4; i++) {
-		fprintf(file, "\tmovk %c%d, #%lld, lsl #%d\n", reg_size[size], reg, imm & 0xffff, i * 16);
+		fprintf(file, "\tmovk %c%d, #%"PRIu64", lsl #%d\n", reg_size[size], reg, imm & 0xffff, i * 16);
 		imm >>= 16;
 		if(!imm) break;
 	}
@@ -255,9 +255,8 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 
 void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start) {
 	LOG(PRN_YLW, "called generate_bin_expr()");
-	LOG(PRN_YLW, "%d", bin_expr_add);
 	switch(expr.bin_expr_node->op) {
-	case bin_expr_add:
+	case op_add:
 		LOG(PRN_YLW, "op is add");
 		if(is_start) {
 			if(expr.bin_expr_node->lhs->type == node_int_lit) {
@@ -302,7 +301,7 @@ void generate_bin_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start) 
 		}
 
 		break;
-	case bin_expr_sub:
+	case op_sub:
 		LOG(PRN_YLW, "op is sub");
 		if(is_start) {
 			if(expr.bin_expr_node->lhs->type == node_int_lit) {
