@@ -125,6 +125,7 @@ extern const char *token_table[];
 
 typedef struct token_t {
 	enum token_type type;
+	u64 line_num;
 	char *value;
 } token_t;
 

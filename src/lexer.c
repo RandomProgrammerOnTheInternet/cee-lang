@@ -1,6 +1,8 @@
 #include "lexer.h"
 #include "util.h"
 
+u64 line_number = 1;
+
 const char *token_table[] = {
 	"auto",
 	"break",
@@ -458,7 +460,13 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_identifier(str, start, &i));
+			tokens.value[i].line_num = line_number;
 			i--;
+		}
+		else if(str[i] == '\n') {
+			LOG(PRN_RED, "detected newline");
+			line_number++;
+			continue;
 		}
 		// whitespace
 		else if(isspace(str[i])) {
@@ -471,6 +479,7 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_int_literal(str, start, &i));
+			tokens.value[i].line_num = line_number;
 			i--;
 		}
 		// operators
@@ -479,6 +488,7 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_operator(str, start, &i));
+			tokens.value[i].line_num = line_number;
 			i--;
 		}
 	}
