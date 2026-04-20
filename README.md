@@ -10,4 +10,4 @@ Uh, there's C++, and there's C#, which is C++++, since # is like 4 plusses. So, 
 ./a.out
 ```
 
-Currently only contains integer variables, gotos, and return. Check `example.cee` for an example
+Currently only contains integer variables, addition, subtraction, gotos, and return. Check `example.cee` for an example
