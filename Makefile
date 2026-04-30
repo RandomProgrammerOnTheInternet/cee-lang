@@ -1,7 +1,8 @@
 CC = clang
-CCFLAGS =
-LDFLAGS =
+
 INCFLAGS = -iquotesrc -I.
+
+CCFLAGS =
 CCFLAGS += -std=c23
 CCFLAGS += -g
 CCFLAGS += -O0
@@ -9,14 +10,21 @@ CCFLAGS += -O0
 CCFLAGS += -Wall
 CCFLAGS += -Wextra
 CCFLAGS += -DDEBUG
+
+LDFLAGS =
 LDFLAGS += -lm
+
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
+OUT = ./ceec
 
-all: build
+all: $(OUT)
 
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INCFLAGS) -o $@ -c $<
 
-build: $(OBJ)
-	$(CC) $(INCFLAGS) $(CCFLAGS) $(LDFLAGS) $(OBJ) -o ceec
+$(OUT): $(OBJ)
+	$(CC) $(INCFLAGS) $(CCFLAGS) $(LDFLAGS) $(OBJ) -o $(@)
+
+clean:
+	rm -f $(OUT) $(O)
