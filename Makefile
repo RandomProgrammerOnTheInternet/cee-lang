@@ -18,6 +18,8 @@ SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 OUT = ./ceec
 
+.PHONY: all clean
+
 all: $(OUT)
 
 %.o: %.c
