@@ -77,6 +77,32 @@ node_var_t parse_var(LIST(token_t) tokens, size_t *i) {
 	exit(1);
 }
 
+node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	node_prim_expr_t *node = malloc(sizeof(node_prim_expr_t));
+	switch(tokens.value[*i].type) {
+	case token_int_literal:
+		LOG(PRN_GRN, "int lit");
+		*node = (node_prim_expr_t) {
+			.type = node_int_lit,
+			.int_lit_node = parse_int_lit(tokens, i)
+		};
+		break;
+	case token_identifier:
+		if(identifier_is_var(tokens.value[i])) {
+			*node = (node_prim_expr_t) {
+				.type = node_var,
+				.var_node = parse_var(tokens, i)
+			};
+		}
+		break;
+	default:
+		LOG(PRN_GRN, "ERROR");
+		break;
+	}
+	return node;
+}
+
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	node_expr_t *node = malloc(sizeof(node_expr_t));
@@ -87,7 +113,7 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 		if(op == token_op_plus || op == token_op_minus) {
 			LOG(PRN_GRN, "bin_expr");
 			*node = (node_expr_t) {
-				.type = node_bin_expr,
+				.type = node_add_expr,
 				.bin_expr_node = parse_bin_expr(tokens, i)
 			};
 		}
@@ -104,7 +130,7 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 		if(op == token_op_plus || op == token_op_minus) {
 			LOG(PRN_GRN, "bin_expr");
 			*node = (node_expr_t) {
-				.type = node_bin_expr,
+				.type = node_add_expr,
 				.bin_expr_node = parse_bin_expr(tokens, i)
 			};
 		}
@@ -125,9 +151,9 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
-node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i) {
+node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
-	node_bin_expr_t *node = malloc(sizeof(node_bin_expr_t));
+	node_add_expr_t *node = malloc(sizeof(node_add_expr_t));
 	if(tokens.value[*i].type == token_int_literal) {
 		LOG(PRN_GRN, "lhs is int_lit");
 		node_expr_t *expr = malloc(sizeof(node_expr_t));
