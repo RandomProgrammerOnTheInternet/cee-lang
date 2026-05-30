@@ -31,6 +31,9 @@ typedef enum op_type : u8 {
 	op_mod
 } op_type;
 
+typedef struct node_mul_expr node_mul_expr_t;
+typedef struct node_add_expr node_add_expr_t;
+
 typedef struct node_int_lit {
 	token_t token;
 } node_int_lit_t;
@@ -48,24 +51,6 @@ typedef struct node_prim_expr {
 	};
 } node_prim_expr_t;
 
-typedef struct node_add_expr node_add_expr_t;
-
-typedef struct node_expr {
-	node_add_expr_t *add_expr_node;
-} node_expr_t;
-
-typedef struct node_add_expr {
-	node_type type;
-	union {
-		node_mul_expr_t mul_expr_node;
-		struct {
-			op_type op;
-			node_add_expr_t *lhs;
-			node_mul_expr_t *rhs;
-		};
-	};
-} node_add_expr_t;
-
 typedef struct node_mul_expr {
 	node_type type;
 	union {
@@ -77,6 +62,23 @@ typedef struct node_mul_expr {
 		};
 	};
 } node_mul_expr_t;
+
+typedef struct node_add_expr {
+	node_type type;
+	union {
+		node_mul_expr_t *mul_expr_node;
+		struct {
+			op_type op;
+			node_add_expr_t *lhs;
+			node_mul_expr_t *rhs;
+		};
+	};
+} node_add_expr_t;
+
+
+typedef struct node_expr {
+	node_add_expr_t *add_expr_node;
+} node_expr_t;
 
 typedef struct node_var_decl {
 	token_t token;
@@ -131,7 +133,10 @@ node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
 node_return_t *parse_return(LIST(token_t) tokens, size_t *i);
 node_var_t parse_var(LIST(token_t) tokens, size_t *i);
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i);
-node_bin_expr_t *parse_bin_expr(LIST(token_t) tokens, size_t *i);
+node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i);
+node_mul_expr_t *parse_mul_expr_rec(LIST(token_t) tokens, size_t *i, node_mul_expr_t *mul_expr);
+node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i);
+node_add_expr_t *parse_add_expr_rec(LIST(token_t) tokens, size_t *i, node_add_expr_t *add_expr);
 node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i);
 node_label_t *parse_label(LIST(token_t) tokens, size_t *i);
 node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i);

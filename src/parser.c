@@ -89,7 +89,7 @@ node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 		};
 		break;
 	case token_identifier:
-		if(identifier_is_var(tokens.value[i])) {
+		if(identifier_is_var(tokens.value[*i])) {
 			*node = (node_prim_expr_t) {
 				.type = node_var,
 				.var_node = parse_var(tokens, i)
@@ -100,53 +100,93 @@ node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 		LOG(PRN_GRN, "ERROR");
 		break;
 	}
+	LOG(PRN_GRN, "end");
 	return node;
 }
 
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	node_expr_t *node = malloc(sizeof(node_expr_t));
-	enum token_type op = tokens.value[*i + 1].type;
-	switch(tokens.value[*i].type) {
-	case token_int_literal:
-		LOG(PRN_GRN, "int_lit");
-		if(op == token_op_plus || op == token_op_minus) {
-			LOG(PRN_GRN, "bin_expr");
-			*node = (node_expr_t) {
-				.type = node_add_expr,
-				.bin_expr_node = parse_bin_expr(tokens, i)
-			};
-		}
-		else {
-			LOG(PRN_GRN, "not bin_expr");
-			*node = (node_expr_t) {
-				.type = node_int_lit,
-				.int_lit_node = parse_int_lit(tokens, i)
-			};
-		}
+	node->add_expr_node = parse_add_expr(tokens, i);
+
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
+node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	node_mul_expr_t *node = malloc(sizeof(node_mul_expr_t));
+	switch(tokens.value[*i + 1].type) {
+	case token_op_asterisk:
+		LOG(PRN_GRN, "op is mul");
+		node->op = op_mul;
 		break;
-	case token_identifier:
-		LOG(PRN_GRN, "var");
-		if(op == token_op_plus || op == token_op_minus) {
-			LOG(PRN_GRN, "bin_expr");
-			*node = (node_expr_t) {
-				.type = node_add_expr,
-				.bin_expr_node = parse_bin_expr(tokens, i)
-			};
-		}
-		else {
-			LOG(PRN_GRN, "not bin_expr");
-			*node = (node_expr_t) {
-				.type = node_var,
-				.var_node = parse_var(tokens, i)
-			};
-		}
+	case token_op_slash:
+		LOG(PRN_GRN, "op is div");
+		node->op = op_div;
+		break;
+	case token_op_percent:
+		LOG(PRN_GRN, "op is mod");
+		node->op = op_mod;
+		break;
+	default:
+		goto no_op;
+	}
+	*node->lhs = (node_mul_expr_t) {
+		.type = node_prim_expr,
+		.prim_expr_node = parse_prim_expr(tokens, i)
+	};
+	*i += 2;
+	node->rhs = parse_prim_expr(tokens, i);
+	if(tokens.value[*i + 1].type == token_op_asterisk ||
+	   tokens.value[*i + 1].type == token_op_slash    ||
+	   tokens.value[*i + 1].type == token_op_percent) {
+		++*i;
+		LOG(PRN_GRN, "end");
+		return parse_mul_expr_rec(tokens, i, node);
+	}
+	LOG(PRN_GRN, "end");
+	return node;
+no_op:
+	LOG(PRN_GRN, "no op");
+	*node = (node_mul_expr_t) {
+		.type = node_prim_expr,
+		.prim_expr_node = parse_prim_expr(tokens, i)
+	};
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
+node_mul_expr_t *parse_mul_expr_rec(LIST(token_t) tokens, size_t *i, node_mul_expr_t *mul_expr) {
+	LOG(PRN_GRN, "start");
+	node_mul_expr_t *node = malloc(sizeof(node_mul_expr_t));
+	node->lhs = mul_expr;
+	switch(tokens.value[*i].type) {
+	case token_op_asterisk:
+		LOG(PRN_GRN, "op is mul");
+		node->op = op_mul;
+		break;
+	case token_op_slash:
+		LOG(PRN_GRN, "op is div");
+		node->op = op_div;
+		break;
+	case token_op_percent:
+		LOG(PRN_GRN, "op is mod");
+		node->op = op_mod;
 		break;
 	default:
 		LOG(PRN_GRN, "ERROR");
 		exit(1);
+		break;
 	}
-
+	++*i;
+	node->rhs = parse_prim_expr(tokens, i);
+	if(tokens.value[*i + 1].type == token_op_asterisk ||
+	   tokens.value[*i + 1].type == token_op_slash    ||
+	   tokens.value[*i + 1].type == token_op_percent) {
+		LOG(PRN_GRN, "end");
+		return parse_mul_expr_rec(tokens, i, node);
+	}
 	LOG(PRN_GRN, "end");
 	return node;
 }
@@ -154,42 +194,64 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	node_add_expr_t *node = malloc(sizeof(node_add_expr_t));
-	if(tokens.value[*i].type == token_int_literal) {
-		LOG(PRN_GRN, "lhs is int_lit");
-		node_expr_t *expr = malloc(sizeof(node_expr_t));
-		expr->int_lit_node = parse_int_lit(tokens, i);
-		expr->type = node_int_lit;
-		node->lhs = expr;
-	}
-	else if(tokens.value[*i].type == token_identifier) {
-		LOG(PRN_GRN, "lhs is identifier");
-		node_expr_t *expr = malloc(sizeof(node_expr_t));
-		expr->var_node = parse_var(tokens, i);
-		expr->type = node_var;
-		node->lhs = expr;
-	}
-	else {
-		LOG(PRN_GRN, "ERROR");
-	}
-	LOG(PRN_GRN, "lhs set");
-	++*i;
-	switch(tokens.value[*i].type) {
+	switch(tokens.value[*i + 1].type) {
 	case token_op_plus:
-		LOG(PRN_GRN, "op is plus");
+		LOG(PRN_GRN, "op is add");
 		node->op = op_add;
 		break;
 	case token_op_minus:
-		LOG(PRN_GRN, "op is minus");
+		LOG(PRN_GRN, "op is sub");
+		node->op = op_sub;
+		break;
+	default:
+		goto no_op;
+	}
+	*node->lhs = (node_add_expr_t) {
+		.type = node_mul_expr,
+		.mul_expr_node = parse_mul_expr(tokens, i)
+	};
+	*i += 2;
+	node->rhs = parse_mul_expr(tokens, i);
+	if(tokens.value[*i + 1].type == token_op_plus ||
+	   tokens.value[*i + 1].type == token_op_minus) {
+		++*i;
+		LOG(PRN_GRN, "end");
+		return parse_add_expr_rec(tokens, i, node);
+	}
+	LOG(PRN_GRN, "end");
+	return node;
+no_op:
+	LOG(PRN_GRN, "no op");
+	LOG(PRN_GRN, "end");
+	return parse_mul_expr(tokens, i);
+}
+
+node_add_expr_t *parse_add_expr_rec(LIST(token_t) tokens, size_t *i, node_add_expr_t *add_expr) {
+	LOG(PRN_GRN, "start");
+	node_add_expr_t *node = malloc(sizeof(node_add_expr_t));
+	node->lhs = add_expr;
+	switch(tokens.value[*i].type) {
+	case token_op_plus:
+		LOG(PRN_GRN, "op is add");
+		node->op = op_add;
+		break;
+	case token_op_minus:
+		LOG(PRN_GRN, "op is sub");
 		node->op = op_sub;
 		break;
 	default:
 		LOG(PRN_GRN, "ERROR");
 		exit(1);
+		break;
 	}
 	++*i;
-	node->rhs = parse_expr(tokens, i);
-	LOG(PRN_GRN, "lhs set");
-
+	node->rhs = parse_mul_expr(tokens, i);
+	if(tokens.value[*i + 1].type == token_op_plus ||
+	   tokens.value[*i + 1].type == token_op_minus) {
+		++*i;
+		LOG(PRN_GRN, "end");
+		return parse_add_expr_rec(tokens, i, node);
+	}
 	LOG(PRN_GRN, "end");
 	return node;
 }
