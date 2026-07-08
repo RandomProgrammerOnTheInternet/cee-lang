@@ -1,9 +1,11 @@
 #include "codegen.h"
 
-#define print(msg, ...) print(msg __VA_OPT_(,) __VA_ARGS__)
+#define print(msg, ...) fprintf(asm_file, msg __VA_OPT__(,) __VA_ARGS__)
+
+FILE *asm_file = NULL;
 
 static inline char *var(size_t stack_offset) {
-	char *str;
+	char *str = NULL;
 	sprintf(str, "dword ptr [rsp-%zu]", stack_offset);
 	return str;
 }
@@ -21,33 +23,42 @@ static inline char *prim_expr(node_prim_expr_t prim_expr_node) {
 	}
 }
 
-static inline void mov(char *s) {
-	print("\tmov eax, %s\n", s);
+static inline void mov(char *dest, char *source) {
+	print("\tmov %s, %s\n", dest, source);
 }
 
 static inline void jmp(char *s) {
 	print("\tjmp %s\n", s);
 }
 
-static inline void imul(char *s) {
-	print("\timul eax, %s\n", s);
+static inline void imul(char *lhs, char *rhs) {
+	print("\timul %s, %s\n", lhs, rhs);
 }
 
-static inline void add(char *s) {
-	print("\tadd eax, %s\n", s);
+static inline void idiv(char *s) {
+	print("\tidiv %s\n", s);
 }
 
-static void generate_return(LIST(node_base_t) node, FILE **file, size_t *i);
-static void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i);
-static void generate_label(LIST(node_base_t) node, FILE **file, size_t *i);
-static void generate_goto(LIST(node_base_t) node, FILE **file, size_t *i);
-static void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i);
-static void generate_mul_expr();
-static void generate_add_expr(node_expr_t expr, FILE **file, size_t *i, bool is_start);
+static inline void add(char *lhs, char *rhs) {
+	print("\tadd %s, %s\n", lhs, rhs);
+}
+
+static inline void sub(char *lhs, char *rhs) {
+	print("\tsub %s, %s\n", lhs, rhs);
+}
+
+static void generate_return(LIST(node_base_t) node, size_t *i);
+static void generate_var_decl(LIST(node_base_t) node, size_t *i);
+static void generate_label(LIST(node_base_t) node, size_t *i);
+static void generate_goto(LIST(node_base_t) node, size_t *i);
+static void generate_assignment(LIST(node_base_t) node, size_t *i);
+static void generate_expr(LIST(node_base_t) node, size_t *i);
+static void generate_mul_expr(char *dest, node_mul_expr_t expr);
+static void generate_add_expr(char *dest, node_expr_t expr);
 
 FILE *generate_asm_x86(LIST(node_base_t) node) {
 	LOG(PRN_YLW, "called generate_asm(): x86 backend");
-	FILE* file = fopen("out.asm", "w");
+	asm_file = fopen("out.asm", "w");
 	LOG(PRN_YLW, "opened file");
 	print(".intel_syntax noprefix\n"
 		  ".global _start\n"
@@ -173,47 +184,64 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 	LOG(PRN_YLW, "end");
 }
 
-void generate_mul_expr(LIST(node_base_t) base_node, FILE **file, size_t *i) {
+void generate_mul_expr(char *dest, node_mul_expr_t expr) {
 	LOG(PRN_YLW, "start");
-	if(node.value[*i].
-	do {
-		LOG(PRN_YLW, "loop");
-		
-	} while();
+
+	if(expr.type == node_mul_expr) {
+		generate_mul_expr(dest, *expr.lhs);
+	}
+	else {
+		mov(dest, prim_expr(*expr.prim_expr_node));
+		LOG(PRN_YLW, "end");
+		return;
+	}
+
+	switch(expr.op) {
+	case op_mul:
+		imul(dest, prim_expr(*expr.rhs));
+		break;
+	case op_div:
+		idiv(prim_expr(*expr.rhs));
+		break;
+	case op_mod:
+		idiv(prim_expr(*expr.rhs));
+		mov(dest, "edx");
+		break;
+	}
 
 	LOG(PRN_YLW, "end");
 }
 
-void generate_add_expr(node_expr_t expr, FILE **file, bool is_start) {
+void generate_add_expr(char *dest, node_add_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
-	switch(expr.add_expr_node->op) {
-	case op_add:
-		LOG(PRN_YLW, "op is add");
-		if(is_start) {
-			if(expr.add_expr_node->lhs->prim_expr_node->type == node_int_lit) {
-				LOG(PRN_YLW, "lhs is int lit");
-				print("\tmov eax, %s # generate_add_expr"\n",
-					expr.add_expr_node->lhs->prim_expr_node->int_lit_node->token.value);
-			}
-			else if(expr.add_expr_node->lhs->prim_expr_node->type == node_var) {
-				LOG(PRN_YLW, "lhs is var");
-				print("\tmov eax, dword ptr [rsp-%zu] # generate_add_expr\n",
-					expr.add_expr_node->lhs->prim_expr_node->var_node.stack_offset);
-			}
-			else {
-				LOG(PRN_YLW, "ERROR");
-				exit(1);
-			}
+	if(expr.type == node_add_expr) {
+		generate_add_expr(*expr.lhs, file);
+	}
+	else {
+		if(expr.mul_expr_node->type == node_prim_expr) {
+			mov("eax", prim_expr(*expr.mul_expr_node->prim_expr_node));
 		}
-		if(expr.add_expr_node->rhs->type
+		else {
+			generate_mul_expr("eax", *expr.mul_expr_node, file);
+		}
+		return;
+	}
 
+	if(expr.rhs->mul_expr_node->type == node_mul_expr) {
+		generate_mul_expr("ecx", *expr.rhs->mul_expr_node);
+		add("eax", "ecx");
+	}
+	else {
+		add("eax", prim_expr(expr.rhs->mul_expr_node->prim_expr_node));
+	}
+
+	switch(expr.op) {
+	case op_add:
+		add("eax", prim_expr(*expr.rhs));
 		break;
 	case op_sub:
-
-		break;
-	default:
-		LOG(PRN_YLW, "ERROR");
+		sub("eax", prim_expr(*expr.rhs));
 		break;
 	}
 	

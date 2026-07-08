@@ -1,7 +1,7 @@
 #include "parser.h"
 
 LIST(node_var_t) variable_lookup;
-size_t stack_size=0;
+size_t stack_size = 0;
 
 LIST(node_base_t) parse(LIST(token_t) tokens) {
 	LOG(PRN_GRN, "start");
@@ -118,45 +118,51 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 	node_mul_expr_t *node = malloc(sizeof(node_mul_expr_t));
 	*node = (node_mul_expr_t) {
 		.type = node_prim_expr,
-		.prim_expr_node = parse_prim_expr(tokens, i)
+		.prim_expr_node = parse_prim_expr(tokens, i) 
 	};
+
 	while(1) {
 		++*i;
 		if(tokens.value[*i].type == node_op_asterisk) {
 			++*i;
+			node_mul_expr_t *tmp = malloc(sizeof(node_mul_expr_t));
+			memcpy(tmp, node, sizeof(node_mul_expr_t));
 			*node = (node_mul_expr_t) {
 				.type = node_mul_expr,
 				.op = op_mul,
-				.lhs = node,
+				.lhs = tmp,
 				.rhs = parse_prim_expr(tokens, i)
 			};
 			continue;
 		}
 		else if(tokens.value[*i].type == node_op_slash) {
 			++*i;
+			node_mul_expr_t *tmp = malloc(sizeof(node_mul_expr_t));
+			memcpy(tmp, node, sizeof(node_mul_expr_t));
 			*node = (node_mul_expr_t) {
 				.type = node_mul_expr,
 				.op = op_div,
-				.lhs = node,
+				.lhs = tmp,
 				.rhs = parse_prim_expr(tokens, i)
 			};
 			continue;
 		}
 		else if(tokens.value[*i].type == node_op_percent) {
 			++*i;
+			node_mul_expr_t *tmp = malloc(sizeof(node_mul_expr_t));
+			memcpy(tmp, node, sizeof(node_mul_expr_t));
 			*node = (node_mul_expr_t) {
 				.type = node_mul_expr,
 				.op = op_mod,
-				.lhs = node,
+				.lhs = tmp,
 				.rhs = parse_prim_expr(tokens, i)
 			};
 			continue;
 		}
 		--*i;
+		LOG(PRN_GRN, "end");
+		return node;
 	}
-
-	LOG(PRN_GRN, "end");
-	return node;
 }
 
 node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
@@ -168,31 +174,35 @@ node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 	};
 	while(1) {
 		++*i;
-		if(tokens.value[*i].type = node_op_plus) {
+		if(tokens.value[*i].type == node_op_plus) {
 			++*i;
+			node_add_expr_t *tmp = malloc(sizeof(node_add_expr_t));
+			memcpy(tmp, node, sizeof(node_add_expr_t));
 			*node = (node_add_expr_t) {
 				.type = node_add_expr,
 				.op = op_add,
-				.lhs = node,
+				.lhs = tmp,
 				.rhs = parse_mul_expr(tokens, i)
 			};
 			continue;
 		}
-		else if(tokens.value[*i].type = node_op_minus) {
+		else if(tokens.value[*i].type == node_op_minus) {
 			++*i;
+			node_add_expr_t *tmp = malloc(sizeof(node_add_expr_t));
+			memcpy(tmp, node, sizeof(node_add_expr_t));
 			*node = (node_add_expr_t) {
 				.type = node_add_expr,
 				.op = op_sub,
-				.lhs = node,
+				.lhs = tmp,
 				.rhs = parse_mul_expr(tokens, i)
 			};
 			continue;
 		}
-		--*i;
-	}
 
-	LOG(PRN_GRN, "end");
-	return node;
+		--*i;
+		LOG(PRN_GRN, "end");
+		return node;
+	}
 }
 
 node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
@@ -205,7 +215,7 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 	if(tokens.value[*i].type != token_identifier) {
 		LOG(PRN_GRN, "ERROR");
 		exit(1);
-	}
+}
 	token_t ident = tokens.value[*i];
 	LOG(PRN_GRN, "identifier: %s", tokens.value[*i].value);
 	++*i;

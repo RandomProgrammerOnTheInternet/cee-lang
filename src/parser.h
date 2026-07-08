@@ -57,8 +57,8 @@ typedef struct node_mul_expr {
 		node_prim_expr_t *prim_expr_node;
 		struct {
 			op_type op;
-			node_prim_expr_t *lhs;
-			node_mul_expr_t *rhs;
+			node_mul_expr_t *lhs;
+			node_prim_expr_t *rhs;
 		};
 	};
 } node_mul_expr_t;
@@ -69,12 +69,11 @@ typedef struct node_add_expr {
 		node_mul_expr_t *mul_expr_node;
 		struct {
 			op_type op;
-			node_mul_expr_t *lhs;
-			node_add_expr_t *rhs;
+			node_add_expr_t *lhs;
+			node_mul_expr_t *rhs;
 		};
 	};
 } node_add_expr_t;
-
 
 typedef struct node_expr {
 	node_add_expr_t *add_expr_node;

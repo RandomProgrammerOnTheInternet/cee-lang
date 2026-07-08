@@ -25,6 +25,3 @@ x.value[x.length - 1] = y
 
 #endif // DS_H
 
-#ifdef DS_IMPL
-
-#endif
