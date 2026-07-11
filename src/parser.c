@@ -123,7 +123,7 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 
 	while(1) {
 		++*i;
-		if(tokens.value[*i].type == node_op_asterisk) {
+		if(tokens.value[*i].type == token_op_asterisk) {
 			++*i;
 			node_mul_expr_t *tmp = malloc(sizeof(node_mul_expr_t));
 			memcpy(tmp, node, sizeof(node_mul_expr_t));
@@ -135,7 +135,7 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 			};
 			continue;
 		}
-		else if(tokens.value[*i].type == node_op_slash) {
+		else if(tokens.value[*i].type == token_op_slash) {
 			++*i;
 			node_mul_expr_t *tmp = malloc(sizeof(node_mul_expr_t));
 			memcpy(tmp, node, sizeof(node_mul_expr_t));
@@ -147,7 +147,7 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 			};
 			continue;
 		}
-		else if(tokens.value[*i].type == node_op_percent) {
+		else if(tokens.value[*i].type == token_op_percent) {
 			++*i;
 			node_mul_expr_t *tmp = malloc(sizeof(node_mul_expr_t));
 			memcpy(tmp, node, sizeof(node_mul_expr_t));
@@ -174,7 +174,7 @@ node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 	};
 	while(1) {
 		++*i;
-		if(tokens.value[*i].type == node_op_plus) {
+		if(tokens.value[*i].type == token_op_plus) {
 			++*i;
 			node_add_expr_t *tmp = malloc(sizeof(node_add_expr_t));
 			memcpy(tmp, node, sizeof(node_add_expr_t));
@@ -186,7 +186,7 @@ node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 			};
 			continue;
 		}
-		else if(tokens.value[*i].type == node_op_minus) {
+		else if(tokens.value[*i].type == token_op_minus) {
 			++*i;
 			node_add_expr_t *tmp = malloc(sizeof(node_add_expr_t));
 			memcpy(tmp, node, sizeof(node_add_expr_t));

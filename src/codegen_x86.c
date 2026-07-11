@@ -52,9 +52,9 @@ static void generate_var_decl(LIST(node_base_t) node, size_t *i);
 static void generate_label(LIST(node_base_t) node, size_t *i);
 static void generate_goto(LIST(node_base_t) node, size_t *i);
 static void generate_assignment(LIST(node_base_t) node, size_t *i);
-static void generate_expr(LIST(node_base_t) node, size_t *i);
 static void generate_mul_expr(char *dest, node_mul_expr_t expr);
-static void generate_add_expr(char *dest, node_expr_t expr);
+static void generate_add_expr(node_add_expr_t expr);
+static void generate_expr(node_expr_t expr);
 
 FILE *generate_asm_x86(LIST(node_base_t) node) {
 	LOG(PRN_YLW, "called generate_asm(): x86 backend");
@@ -68,23 +68,23 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 		switch(node.value[i].statement_node->type) {
 		case node_return:
 			LOG(PRN_YLW, "detected node_return");
-			generate_return(node, &file, &i);
+			generate_return(node, &i);
 			break;
 		case node_var_decl:
 			LOG(PRN_YLW, "detected node_var_decl");
-			generate_var_decl(node, &file, &i);
+			generate_var_decl(node, &i);
 			break;
 		case node_label:
 			LOG(PRN_YLW, "detected node_label");
-			generate_label(node, &file, &i);
+			generate_label(node, &i);
 			break;
 		case node_goto:
 			LOG(PRN_YLW, "detected node_goto");
-			generate_goto(node, &file, &i);
+			generate_goto(node, &i);
 			break;
 		case node_assignment:
 			LOG(PRN_YLW, "detected node_assignment");
-			generate_assignment(node, &file, &i);
+			generate_assignment(node, &i);
 			break;
 		default:
 			LOG(PRN_YLW, "default");
@@ -93,22 +93,30 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 	}
 //	LIST_FREE(node);
 	
-	return file;
+	return asm_file;
 }
 
-void generate_return(LIST(node_base_t) node, FILE **file, size_t *i) {
+void generate_return(LIST(node_base_t) node, size_t *i) {
 	LOG(PRN_YLW, "start");
+	print("# begin %s\n", __func__);
 
-	generate_expr(node, file, i);	
-	print("\tmov rax, 60 # generate_return\n");
-	print("\tsyscall # generate_return\n");
+	generate_expr(*node.value[*i].statement_node->return_node->expr_node);	
+	mov("edi", "eax");
+	mov("rax", "60");
+	print("\tsyscall\n");
 
+	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
-void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i) {
+void generate_var_decl(LIST(node_base_t) node, size_t *i) {
 	LOG(PRN_YLW, "start");
+	print("# begin %s\n", __func__);
 
+	generate_expr(*node.value[*i].statement_node->var_decl_node->expr_node);
+	mov(var(node.value[*i].statement_node->var_decl_node->stack_offset), "eax");
+
+/*
 	if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_int_lit) {
 		LOG(PRN_YLW, "expr is int_lit");
 		print("\tmov dword ptr [rsp-%zu], %s # generate_var_decl\n",
@@ -132,31 +140,42 @@ void generate_var_decl(LIST(node_base_t) node, FILE **file, size_t *i) {
 		printf("\ncodegen error var decl\n");
 		exit(1);
 	}
+	*/
 
+	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
-void generate_label(LIST(node_base_t) node, FILE **file, size_t *i) {
+void generate_label(LIST(node_base_t) node, size_t *i) {
 	LOG(PRN_YLW, "start");
+	print("# begin %s\n", __func__);
 
 	print(".label_%s: # generate_label\n",
 		node.value[*i].statement_node->label_node->token.value);
 
+	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
-void generate_goto(LIST(node_base_t) node, FILE **file, size_t *i) {
+void generate_goto(LIST(node_base_t) node, size_t *i) {
 	LOG(PRN_YLW, "start");
+	print("# begin %s\n", __func__);
 
 	print("\tjmp .label_%s # generate_goto\n",
 		node.value[*i].statement_node->goto_node->token.value);
 
+	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
-void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
+void generate_assignment(LIST(node_base_t) node, size_t *i) {
 	LOG(PRN_YLW, "start");
+	print("# begin %s\n", __func__);
 
+	generate_expr(*node.value[*i].statement_node->assignment_node->rhs);
+	mov(var(node.value[*i].statement_node->assignment_node->lhs.stack_offset), "eax");
+
+/*
 	if(node.value[*i].statement_node->assignment_node->rhs->type == node_var) {
 		LOG(PRN_YLW, "rhs is var");
 		print("\tmov eax, dword ptr [rsp-%zu] # generate_assignment\n",
@@ -180,7 +199,9 @@ void generate_assignment(LIST(node_base_t) node, FILE **file, size_t *i) {
 		printf("\ncodegen error assignment\n");
 		exit(1);
 	}
+	*/
 
+	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
@@ -212,38 +233,45 @@ void generate_mul_expr(char *dest, node_mul_expr_t expr) {
 	LOG(PRN_YLW, "end");
 }
 
-void generate_add_expr(char *dest, node_add_expr_t expr) {
+void generate_add_expr(node_add_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
 	if(expr.type == node_add_expr) {
-		generate_add_expr(*expr.lhs, file);
+		generate_add_expr(*expr.lhs);
 	}
 	else {
 		if(expr.mul_expr_node->type == node_prim_expr) {
 			mov("eax", prim_expr(*expr.mul_expr_node->prim_expr_node));
 		}
 		else {
-			generate_mul_expr("eax", *expr.mul_expr_node, file);
+			generate_mul_expr("eax", *expr.mul_expr_node);
 		}
+		LOG(PRN_YLW, "end");
 		return;
 	}
 
-	if(expr.rhs->mul_expr_node->type == node_mul_expr) {
-		generate_mul_expr("ecx", *expr.rhs->mul_expr_node);
+	if(expr.rhs->type == node_mul_expr) {
+		generate_mul_expr("ecx", *expr.rhs);
 		add("eax", "ecx");
 	}
+	/*
 	else {
-		add("eax", prim_expr(expr.rhs->mul_expr_node->prim_expr_node));
+		add("eax", prim_expr(*expr.rhs->prim_expr_node));
 	}
+	*/
 
 	switch(expr.op) {
 	case op_add:
-		add("eax", prim_expr(*expr.rhs));
+		add("eax", prim_expr(*expr.rhs->prim_expr_node));
 		break;
 	case op_sub:
-		sub("eax", prim_expr(*expr.rhs));
+		sub("eax", prim_expr(*expr.rhs->prim_expr_node));
 		break;
 	}
 	
 	LOG(PRN_YLW, "end");
+}
+
+void generate_expr(node_expr_t expr) {
+	generate_add_expr(*expr.add_expr_node);
 }
