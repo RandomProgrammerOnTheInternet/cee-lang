@@ -5,7 +5,7 @@
 FILE *asm_file = NULL;
 
 static inline char *var(size_t stack_offset) {
-	char *str = NULL;
+	char *str = malloc(24); // size of string (17) + extra for number digits (7 digits)
 	sprintf(str, "dword ptr [rsp-%zu]", stack_offset);
 	return str;
 }
@@ -254,11 +254,6 @@ void generate_add_expr(node_add_expr_t expr) {
 		generate_mul_expr("ecx", *expr.rhs);
 		add("eax", "ecx");
 	}
-	/*
-	else {
-		add("eax", prim_expr(*expr.rhs->prim_expr_node));
-	}
-	*/
 
 	switch(expr.op) {
 	case op_add:
@@ -273,5 +268,7 @@ void generate_add_expr(node_add_expr_t expr) {
 }
 
 void generate_expr(node_expr_t expr) {
+	LOG(PRN_YLW, "start");
 	generate_add_expr(*expr.add_expr_node);
+	LOG(PRN_YLW, "end");
 }

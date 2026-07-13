@@ -224,7 +224,8 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		exit(1);
 	}
 	++*i;
-	if(tokens.value[*i].type != token_int_literal && tokens.value[*i].type != token_identifier) {
+	if(tokens.value[*i].type != token_int_literal &&
+		tokens.value[*i].type != token_identifier) {
 		LOG(PRN_GRN, "ERROR");
 		exit(1);
 	}
