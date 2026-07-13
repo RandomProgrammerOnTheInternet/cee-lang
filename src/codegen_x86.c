@@ -252,7 +252,17 @@ void generate_add_expr(node_add_expr_t expr) {
 
 	if(expr.rhs->type == node_mul_expr) {
 		generate_mul_expr("ecx", *expr.rhs);
-		add("eax", "ecx");
+		switch(expr.op) {
+		case op_add:
+			add("eax", "ecx");
+			return;
+		case op_sub:
+			sub("eax", "ecx");
+			return;
+		default:
+			LOG(PRN_GRN, "ERROR????");
+			exit(1);
+		}
 	}
 
 	switch(expr.op) {
