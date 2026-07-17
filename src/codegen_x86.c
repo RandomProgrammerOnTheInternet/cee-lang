@@ -142,32 +142,6 @@ void generate_var_decl(LIST(node_base_t) node, size_t *i) {
 	generate_expr(*node.value[*i].statement_node->var_decl_node->expr_node);
 	mov(var(node.value[*i].statement_node->var_decl_node->stack_offset), "eax");
 
-/*
-	if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_int_lit) {
-		LOG(PRN_YLW, "expr is int_lit");
-		print("\tmov dword ptr [rsp-%zu], %s # generate_var_decl\n",
-			node.value[*i].statement_node->var_decl_node->stack_offset,
-			node.value[*i].statement_node->var_decl_node->expr_node->int_lit_node->token.value);
-	}
-	else if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_var) {
-		LOG(PRN_YLW, "expr is var");
-		print("\tmov eax, dword ptr [rsp-%zu] # generate_var_decl\n",
-			node.value[*i].statement_node->var_decl_node->expr_node->var_node.stack_offset);
-		print("\tmov dword ptr [rsp-%zu], eax # generate_var_decl\n",
-			node.value[*i].statement_node->var_decl_node->stack_offset);
-	}
-	else if(node.value[*i].statement_node->var_decl_node->expr_node->type == node_bin_expr) {
-		LOG(PRN_YLW, "expr is bin_expr");
-		generate_bin_expr(*node.value[*i].statement_node->var_decl_node->expr_node, file, i, true);
-		print("\tmov dword ptr [rsp-%zu], eax # generate_var_decl\n",
-			node.value[*i].statement_node->var_decl_node->stack_offset);
-	}
-	else {
-		printf("\ncodegen error var decl\n");
-		exit(1);
-	}
-	*/
-
 	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
@@ -200,32 +174,6 @@ void generate_assignment(LIST(node_base_t) node, size_t *i) {
 
 	generate_expr(*node.value[*i].statement_node->assignment_node->rhs);
 	mov(var(node.value[*i].statement_node->assignment_node->lhs.stack_offset), "eax");
-
-/*
-	if(node.value[*i].statement_node->assignment_node->rhs->type == node_var) {
-		LOG(PRN_YLW, "rhs is var");
-		print("\tmov eax, dword ptr [rsp-%zu] # generate_assignment\n",
-			node.value[*i].statement_node->assignment_node->lhs.stack_offset);
-		print("\tmov dword ptr [rsp-%zu], eax # generate_assignment\n",
-			node.value[*i].statement_node->assignment_node->rhs->var_node.stack_offset);
-	}
-	else if(node.value[*i].statement_node->assignment_node->rhs->type == node_int_lit) {
-		LOG(PRN_YLW, "rhs is int_lit");
-		print("\tmov dword ptr [rsp-%zu], %s # generate_assignment\n",
-			node.value[*i].statement_node->assignment_node->lhs.stack_offset,
-			node.value[*i].statement_node->assignment_node->rhs->int_lit_node->token.value);
-	}
-	else if(node.value[*i].statement_node->assignment_node->rhs->type == node_bin_expr) {
-		LOG(PRN_YLW, "rhs is bin_expr");
-		generate_bin_expr(*node.value[*i].statement_node->assignment_node->rhs, file, i, true);
-		print("\tmov dword ptr [rsp-%zu], eax # generate_assignment\n",
-			node.value[*i].statement_node->assignment_node->lhs.stack_offset);
-	}
-	else {
-		printf("\ncodegen error assignment\n");
-		exit(1);
-	}
-	*/
 
 	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
