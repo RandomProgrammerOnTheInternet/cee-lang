@@ -3,6 +3,11 @@
 #define print(msg, ...) fprintf(asm_file, msg __VA_OPT__(,) __VA_ARGS__)
 
 FILE *asm_file = NULL;
+static const char *expr_reg[] = {"eax", "ecx", "edx", "ebx"};
+
+static inline char **next_expr_reg(char **reg) {
+	return reg + 1;
+}
 
 static inline char *var(size_t stack_offset) {
 	char *str = malloc(24); // size of string (17) + extra for number digits (7 digits)
@@ -23,8 +28,28 @@ static inline char *prim_expr(node_prim_expr_t prim_expr_node) {
 	}
 }
 
-static inline void mov(char *dest, char *source) {
-	print("\tmov %s, %s\n", dest, source);
+static inline void and(char *dest, char *src) {
+	print("\tand %s, %s\n", dest, src);
+}
+
+static inline void mov(char *dest, char *src) {
+	print("\tmov %s, %s\n", dest, src);
+}
+
+static inline void movzx(char *dest, char *src) {
+	print("\tmovzx %s, %s\n", dest, src);
+}
+
+static inline void cmp(char *lhs, char *rhs) {
+	print("\tcmp %s, %s\n", lhs, rhs);
+}
+
+static inline void sete(char *s) {
+	print("\tsete %s\n", s);
+}
+
+static inline void setne(char *s) {
+	print("\tsetne %s\n", s);
 }
 
 static inline void jmp(char *s) {
@@ -52,8 +77,9 @@ static void generate_var_decl(LIST(node_base_t) node, size_t *i);
 static void generate_label(LIST(node_base_t) node, size_t *i);
 static void generate_goto(LIST(node_base_t) node, size_t *i);
 static void generate_assignment(LIST(node_base_t) node, size_t *i);
-static void generate_mul_expr(char *dest, node_mul_expr_t expr);
-static void generate_add_expr(node_add_expr_t expr);
+static void generate_mul_expr(char **dest, node_mul_expr_t expr);
+static void generate_add_expr(char **dest, node_add_expr_t expr);
+static void generate_equal_expr(char **dest, node_equal_expr_t expr);
 static void generate_expr(node_expr_t expr);
 
 FILE *generate_asm_x86(LIST(node_base_t) node) {
@@ -205,59 +231,58 @@ void generate_assignment(LIST(node_base_t) node, size_t *i) {
 	LOG(PRN_YLW, "end");
 }
 
-void generate_mul_expr(char *dest, node_mul_expr_t expr) {
+void generate_mul_expr(char **dest, node_mul_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
 	if(expr.type == node_mul_expr) {
 		generate_mul_expr(dest, *expr.lhs);
 	}
 	else {
-		mov(dest, prim_expr(*expr.prim_expr_node));
+		mov(*dest, prim_expr(*expr.prim_expr_node));
 		LOG(PRN_YLW, "end");
 		return;
 	}
 
 	switch(expr.op) {
 	case op_mul:
-		imul(dest, prim_expr(*expr.rhs));
+		imul(*dest, prim_expr(*expr.rhs));
 		break;
 	case op_div:
+		printf("sorry division and modulus doesnt work yet, x86 is weird\n");
+		exit(1);
 		idiv(prim_expr(*expr.rhs));
 		break;
 	case op_mod:
+		printf("sorry division and modulus doesnt work yet, x86 is weird\n");
+		exit(1);
 		idiv(prim_expr(*expr.rhs));
-		mov(dest, "edx");
+		mov(*dest, "edx");
 		break;
 	}
 
 	LOG(PRN_YLW, "end");
 }
 
-void generate_add_expr(node_add_expr_t expr) {
+void generate_add_expr(char **dest, node_add_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
 	if(expr.type == node_add_expr) {
-		generate_add_expr(*expr.lhs);
+		generate_add_expr(dest, *expr.lhs);
 	}
 	else {
-		if(expr.mul_expr_node->type == node_prim_expr) {
-			mov("eax", prim_expr(*expr.mul_expr_node->prim_expr_node));
-		}
-		else {
-			generate_mul_expr("eax", *expr.mul_expr_node);
-		}
+		generate_mul_expr(dest, *expr.mul_expr_node);
 		LOG(PRN_YLW, "end");
 		return;
 	}
 
 	if(expr.rhs->type == node_mul_expr) {
-		generate_mul_expr("ecx", *expr.rhs);
+		generate_mul_expr(next_expr_reg(dest), *expr.rhs);
 		switch(expr.op) {
 		case op_add:
-			add("eax", "ecx");
+			add(*dest, *next_expr_reg(dest));
 			return;
 		case op_sub:
-			sub("eax", "ecx");
+			sub(*dest, *next_expr_reg(dest));
 			return;
 		default:
 			LOG(PRN_GRN, "ERROR????");
@@ -267,18 +292,65 @@ void generate_add_expr(node_add_expr_t expr) {
 
 	switch(expr.op) {
 	case op_add:
-		add("eax", prim_expr(*expr.rhs->prim_expr_node));
+		add(*dest, prim_expr(*expr.rhs->prim_expr_node));
 		break;
 	case op_sub:
-		sub("eax", prim_expr(*expr.rhs->prim_expr_node));
+		sub(*dest, prim_expr(*expr.rhs->prim_expr_node));
 		break;
 	}
 	
 	LOG(PRN_YLW, "end");
 }
 
+void generate_equal_expr(char **dest, node_equal_expr_t expr) {
+	LOG(PRN_YLW, "start");
+	if(expr.type == node_equal_expr) {
+		generate_equal_expr(dest, *expr.lhs);
+	}
+	else {
+		generate_add_expr(dest, *expr.add_expr_node);
+		LOG(PRN_YLW, "end");
+		return;
+	}
+
+	if(expr.rhs->type == node_add_expr) {
+		generate_add_expr(next_expr_reg(dest), *expr.rhs);
+		switch(expr.op) {
+		case op_equ:
+			cmp(*dest, *next_expr_reg(dest));
+			sete("al");
+			and("al", "1");
+			movzx(*dest, "al");
+			break;
+		case op_neq:
+			cmp(*dest, *next_expr_reg(dest));
+			setne("al");
+			and("al", "1");
+			movzx(*dest, "al");
+			break;
+		}
+	}
+
+	switch(expr.op) {
+	case op_equ:
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->prim_expr_node));
+		sete("al");
+		and("al", "1");
+		movzx(*dest, "al");
+		break;
+	case op_neq:
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->prim_expr_node));
+		setne("al");
+		and("al", "1");
+		movzx(*dest, "al");
+		break;
+	}
+
+	LOG(PRN_YLW, "end");
+}
+
 void generate_expr(node_expr_t expr) {
 	LOG(PRN_YLW, "start");
-	generate_add_expr(*expr.add_expr_node);
+	generate_equal_expr(&expr_reg[0], *expr.equal_expr_node);
 	LOG(PRN_YLW, "end");
 }

@@ -107,7 +107,7 @@ node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	node_expr_t *node = malloc(sizeof(node_expr_t));
-	node->add_expr_node = parse_add_expr(tokens, i);
+	node->equal_expr_node = parse_equal_expr(tokens, i);
 
 	LOG(PRN_GRN, "end");
 	return node;
@@ -199,6 +199,45 @@ node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 			continue;
 		}
 
+		--*i;
+		LOG(PRN_GRN, "end");
+		return node;
+	}
+}
+
+node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	node_equal_expr_t *node = malloc(sizeof(node_equal_expr_t));
+	*node = (node_equal_expr_t) {
+		.type = node_add_expr,
+		.add_expr_node = parse_add_expr(tokens, i)
+	};
+	while(1) {
+		++*i;
+		if(tokens.value[*i].type == token_op_equals_equals) {
+			++*i;
+			node_equal_expr_t *tmp = malloc(sizeof(node_equal_expr_t));
+			memcpy(tmp, node, sizeof(node_add_expr_t));
+			*node = (node_equal_expr_t) {
+				.type = node_equal_expr,
+				.op = op_equ,
+				.lhs = tmp,
+				.rhs = parse_add_expr(tokens, i)
+			};
+			continue;
+		}
+		else if(tokens.value[*i].type == token_op_not_equals) {
+			++*i;
+			node_equal_expr_t *tmp = malloc(sizeof(node_equal_expr_t));
+			memcpy(tmp, node, sizeof(node_add_expr_t));
+			*node = (node_equal_expr_t) {
+				.type = node_equal_expr,
+				.op = op_neq,
+				.lhs = tmp,
+				.rhs = parse_add_expr(tokens, i)
+			};
+			continue;
+		}
 		--*i;
 		LOG(PRN_GRN, "end");
 		return node;
