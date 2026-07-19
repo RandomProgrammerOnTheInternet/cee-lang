@@ -21,7 +21,7 @@ x.value = realloc(x.value, x.length * sizeof(typeof(*x.value)))
 #define LIST_APPEND(x, y) LIST_ADD(x, 1); \
 x.value[x.length - 1] = y
 
-#define LIST_FREE(x) if(x.value != NULL) free(x.value)
+#define LIST_FREE(x) if(x.value != NULL) {free(x.value);}
 
 #endif // DS_H
 

@@ -62,9 +62,6 @@ void compile(int argc, char **argv) {
 
 	LIST(node_base_t) base_node = parse(tokens);
 	LOG(PRN_BLU, "converted tokens to nodes");
-	for(size_t i = 0; i < variable_lookup.length; i++) {
-		LOG(PRN_BLU, "variable name: %s | stack offset: %zu", variable_lookup.value[i].token.value, variable_lookup.value[i].stack_offset);
-	}
 	FILE *asm_file = generate_asm(base_node, backend);
 	LOG(PRN_BLU, "generated asm");
 	fclose(asm_file);

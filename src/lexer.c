@@ -406,12 +406,12 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 		if(str[*i] == ']') {
 			++*i;
 			return (token_t) {
-				.type = token_op_attr_begin,
+				.type = token_op_attr_end,
 				.value = substr(str, start, *i),
 			};
 		}
 		return (token_t) {
-			.type = token_op_left_bracket,
+			.type = token_op_right_bracket,
 			.value = substr(str, start, *i),
 		};
 		break;
@@ -423,13 +423,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 		break;
 	case '{':
 		return (token_t) {
-			.type = token_op_right_curly_brace,
+			.type = token_op_left_curly_brace,
 			.value = substr(str, start, *i),
 		};
 		break;
 	case '}':
 		return (token_t) {
-			.type = token_op_left_curly_brace,
+			.type = token_op_right_curly_brace,
 			.value = substr(str, start, *i),
 		};
 		break;
@@ -460,7 +460,6 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_identifier(str, start, &i));
-			tokens.value[i].line_num = line_number;
 			i--;
 		}
 		else if(str[i] == '\n') {
@@ -479,7 +478,6 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_int_literal(str, start, &i));
-			tokens.value[i].line_num = line_number;
 			i--;
 		}
 		// operators
@@ -488,7 +486,6 @@ LIST(token_t) tokenize(char *str) {
 			u64 start = i;
 			i++;
 			LIST_APPEND(tokens, tokenize_operator(str, start, &i));
-			tokens.value[i].line_num = line_number;
 			i--;
 		}
 	}

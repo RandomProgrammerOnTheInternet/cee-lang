@@ -15,6 +15,7 @@ typedef enum node_type : u8 {
 	node_var_decl,
 	node_expr,
 	node_statement,
+	node_compound_statement,
 	node_label,
 	node_goto,
 	node_assignment,
@@ -43,8 +44,8 @@ typedef struct node_int_lit {
 } node_int_lit_t;
 
 typedef struct node_var {
-	size_t stack_offset;
 	token_t token;
+	size_t stack_offset;
 } node_var_t;
 
 typedef struct node_prim_expr {
@@ -118,6 +119,7 @@ typedef struct node_goto {
 	token_t token;
 } node_goto_t;
 
+typedef struct node_compound_statement node_compound_statement_t;
 typedef struct node_statement {
 	node_type type;
 	union {
@@ -126,8 +128,15 @@ typedef struct node_statement {
 		node_label_t *label_node;
 		node_goto_t *goto_node;
 		node_assignment_t *assignment_node;
+		node_compound_statement_t *compound_statement_node;
 	};
 } node_statement_t;
+
+typedef node_statement_t* node_stmt_ptr;
+NEW_LIST(node_stmt_ptr);
+typedef struct node_compound_statement {
+	LIST(node_stmt_ptr) statement_nodes;
+} node_compound_statement_t;
 
 typedef struct node_base {
 	node_type type;
@@ -138,10 +147,16 @@ typedef struct node_base {
 } node_base_t;
 
 NEW_LIST(node_var_t);
+typedef struct scope {
+	LIST(node_var_t) vars;
+} scope_t;
+
+
+NEW_LIST(scope_t);
 NEW_LIST(node_base_t);
 
 extern size_t stack_size;
-extern LIST(node_var_t) variable_lookup;
+extern LIST(scope_t) scopes;
 
 LIST(node_base_t) parse(LIST(token_t) tokens);
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
@@ -155,6 +170,7 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i);
 node_label_t *parse_label(LIST(token_t) tokens, size_t *i);
 node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i);
 node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i);
+node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i);
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i);
 
 bool identifier_is_var(token_t token);

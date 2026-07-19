@@ -1,13 +1,16 @@
 #include "parser.h"
 
-LIST(node_var_t) variable_lookup;
 size_t stack_size = 0;
+LIST(scope_t) scopes;
+#define curr_scope scopes.value[scopes.length - 1]
 
 LIST(node_base_t) parse(LIST(token_t) tokens) {
 	LOG(PRN_GRN, "start");
-	INIT_LIST(variable_lookup, 0);
 	LIST(node_base_t) base_node;
 	INIT_LIST(base_node, 0);
+
+	INIT_LIST(scopes, 1); // scopes.value[0] is the global scope
+	INIT_LIST(scopes.value[0].vars, 0);
 
 	for(size_t i = 0; i < tokens.length; i++) {
 		LOG(PRN_GRN, "loop");
@@ -15,8 +18,9 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 		case token_keyword_goto: [[fallthrough]];
 		case token_keyword_int: [[fallthrough]];
 		case token_keyword_return: [[fallthrough]];
+		case token_op_left_curly_brace: [[fallthrough]];
 		case token_identifier:
-			LOG(PRN_GRN, "detected statement");
+			LOG(PRN_GRN, "detected statement %s", tokens.value[i].value);
 			LIST_APPEND(base_node, ((node_base_t) {
 				.type = node_statement,
 				.statement_node = parse_statement(tokens, &i)
@@ -65,12 +69,16 @@ node_return_t *parse_return(LIST(token_t) tokens, size_t *i) {
 
 node_var_t parse_var(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
-	LOG(PRN_GRN, "variable_lookup.length = %zu", variable_lookup.length);
-	for(size_t j = 0; j < variable_lookup.length; j++) {
-		LOG(PRN_GRN, "loop: %s", variable_lookup.value[j].token.value);
-		if(!strcmp(tokens.value[*i].value, variable_lookup.value[j].token.value)) {
+	LOG(PRN_GRN, "curr_scope->vars.length = %zu", curr_scope.vars.length);
+	if(curr_scope.vars.length == 0) {
+		printf("error no variables in the scope");
+		exit(1);
+	}
+	for(size_t j = 0; j < curr_scope.vars.length; j++) {
+		LOG(PRN_GRN, "loop: %s", curr_scope.vars.value[j].token.value);
+		if(!strcmp(tokens.value[*i].value, curr_scope.vars.value[j].token.value)) {
 			LOG(PRN_GRN, "end");
-			return variable_lookup.value[j];
+			return curr_scope.vars.value[j];
 		}
 	}
 	LOG(PRN_GRN, "ERROR");
@@ -279,7 +287,7 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		.stack_offset = stack_size,
 		.token = ident
 	};
-	LIST_APPEND(variable_lookup, var_node);
+	LIST_APPEND(curr_scope.vars, var_node);
 	LOG(PRN_GRN, "var_node set");
 	
 	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
@@ -344,6 +352,27 @@ node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
+node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	node_compound_statement_t *node = malloc(sizeof(node_compound_statement_t));
+	INIT_LIST(node->statement_nodes, 0);
+	scope_t scope = curr_scope;
+	LIST_APPEND(scopes, scope);
+
+	LOG(PRN_GRN, "%s", tokens.value[*i].value);
+	++*i;
+	LOG(PRN_GRN, "%s", tokens.value[*i].value);
+	while(tokens.value[*i].type != token_op_right_curly_brace) {
+		LOG(PRN_GRN, "loop %s", tokens.value[*i].value);
+		LIST_APPEND(node->statement_nodes, parse_statement(tokens, i));
+		++*i;
+	}
+	LIST_ADD(scopes, -1); // remove scope
+
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	node_statement_t *node = malloc(sizeof(node_statement_t));
@@ -356,7 +385,6 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		LOG(PRN_GRN, "end return");
 		return node;
-		break;
 	case token_keyword_goto:
 		LOG(PRN_GRN, "detected keyword goto");
 		*node = (node_statement_t) {
@@ -365,7 +393,6 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		LOG(PRN_GRN, "end goto");
 		return node;
-		break;
 	case token_keyword_int:
 		LOG(PRN_GRN, "detected keyword int");
 		*node = (node_statement_t) {
@@ -374,7 +401,17 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		LOG(PRN_GRN, "end int");
 		return node;
-		break;
+	case token_op_left_curly_brace:
+		LOG(PRN_GRN, "detected op_left_curly_brace");
+		*node = (node_statement_t) {
+			.type = node_compound_statement,
+			.compound_statement_node = parse_compound_statement(tokens, i)
+		};
+		LOG(PRN_GRN, "end left curly");
+		return node;
+	case token_op_right_curly_brace:
+		LOG(PRN_GRN, "detected op_right_curly_brace");
+		return NULL;
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);
 		if(identifier_is_var(tokens.value[*i])) {
@@ -397,9 +434,11 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 			LOG(PRN_GRN, "ERROR");
 			exit(1);
 		}
-		break;
+	case token_op_semicolon:
+		LOG(PRN_GRN, "token_op_semicolon");
+		return NULL;
 	default:
-		LOG(PRN_GRN, "ERROR");
+		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
 		exit(1);
 	}
 	printf("impossible error parse_statement\n");
@@ -408,8 +447,8 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 
 bool identifier_is_var(token_t token) {
 	LOG(PRN_GRN, "start");
-	for(size_t i = 0; i < variable_lookup.length; i++) {
-		if(!strcmp(token.value, variable_lookup.value[i].token.value)) {
+	for(size_t i = 0; i < curr_scope.vars.length; i++) {
+		if(!strcmp(token.value, curr_scope.vars.value[i].token.value)) {
 			LOG(PRN_GRN, "identifier is var");
 			LOG(PRN_GRN, "end");
 			return true;
