@@ -356,7 +356,9 @@ node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t
 	LOG(PRN_GRN, "start");
 	node_compound_statement_t *node = malloc(sizeof(node_compound_statement_t));
 	INIT_LIST(node->statement_nodes, 0);
-	scope_t scope = curr_scope;
+	scope_t scope;
+	INIT_LIST(scope.vars, curr_scope.vars.length);
+	memcpy(scope.vars.value, curr_scope.vars.value, curr_scope.vars.length * sizeof(node_var_t));
 	LIST_APPEND(scopes, scope);
 
 	LOG(PRN_GRN, "%s", tokens.value[*i].value);
@@ -367,7 +369,20 @@ node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t
 		LIST_APPEND(node->statement_nodes, parse_statement(tokens, i));
 		++*i;
 	}
+	for(size_t j = 0; j < curr_scope.vars.length; j++) {
+		LOG(PRN_GRN, "variable name: %s | stack offset: %zu", curr_scope.vars.value[j].token.value, curr_scope.vars.value[j].stack_offset);
+	}
+	LOG(PRN_GRN, "%zu", scopes.length);
 	LIST_ADD(scopes, -1); // remove scope
+	LOG(PRN_GRN, "%zu", scopes.length);
+	/*
+	for(size_t j = 0; j < curr_scope.vars.length; j++) {
+		LOG(PRN_GRN, "variable name: %s | stack offset: %zu", curr_scope.vars.value[j].token.value, curr_scope.vars.value[j].stack_offset);
+	}
+	*/
+	for(size_t j = 0; j < scopes.value[0].vars.length; j++) {
+		LOG(PRN_GRN, "variable name: %s | stack offset: %zu", scopes.value[0].vars.value[j].token.value, scopes.value[0].vars.value[j].stack_offset);
+	}
 
 	LOG(PRN_GRN, "end");
 	return node;
@@ -409,9 +424,6 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		LOG(PRN_GRN, "end left curly");
 		return node;
-	case token_op_right_curly_brace:
-		LOG(PRN_GRN, "detected op_right_curly_brace");
-		return NULL;
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);
 		if(identifier_is_var(tokens.value[*i])) {
@@ -434,9 +446,6 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 			LOG(PRN_GRN, "ERROR");
 			exit(1);
 		}
-	case token_op_semicolon:
-		LOG(PRN_GRN, "token_op_semicolon");
-		return NULL;
 	default:
 		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
 		exit(1);
@@ -449,12 +458,12 @@ bool identifier_is_var(token_t token) {
 	LOG(PRN_GRN, "start");
 	for(size_t i = 0; i < curr_scope.vars.length; i++) {
 		if(!strcmp(token.value, curr_scope.vars.value[i].token.value)) {
-			LOG(PRN_GRN, "identifier is var");
+			LOG(PRN_GRN, "identifier %s is var", token.value);
 			LOG(PRN_GRN, "end");
 			return true;
 		}
 	}
-	LOG(PRN_GRN, "identifier is not var");
+	LOG(PRN_GRN, "identifier %s is not var", token.value);
 	LOG(PRN_GRN, "end");
 	return false;
 }
