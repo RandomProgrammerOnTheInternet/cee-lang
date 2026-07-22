@@ -22,7 +22,9 @@ typedef enum node_type : u8 {
 	node_prim_expr,
 	node_mul_expr,
 	node_add_expr,
-	node_equal_expr
+	node_equal_expr,
+	node_if,
+	node_if_else
 } node_type;
 
 typedef enum op_type : u8 {
@@ -119,6 +121,14 @@ typedef struct node_goto {
 	token_t token;
 } node_goto_t;
 
+typedef struct node_statement node_statement_t;
+typedef struct node_if {
+	node_type type;
+	node_expr_t *expr_node;
+	node_statement_t *if_branch;
+	node_statement_t *else_branch;
+} node_if_t;
+
 typedef struct node_compound_statement node_compound_statement_t;
 typedef struct node_statement {
 	node_type type;
@@ -129,6 +139,7 @@ typedef struct node_statement {
 		node_goto_t *goto_node;
 		node_assignment_t *assignment_node;
 		node_compound_statement_t *compound_statement_node;
+		node_if_t if_node;
 	};
 } node_statement_t;
 
@@ -146,7 +157,6 @@ NEW_LIST(node_var_t);
 typedef struct scope {
 	LIST(node_var_t) vars;
 } scope_t;
-
 
 NEW_LIST(scope_t);
 NEW_LIST(node_base_t);
@@ -167,6 +177,7 @@ node_label_t *parse_label(LIST(token_t) tokens, size_t *i);
 node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i);
 node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i);
 node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i);
+node_if_t *parse_if(LIST(token_t) tokens, size_t *i);
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i);
 
 bool identifier_is_var(token_t token);

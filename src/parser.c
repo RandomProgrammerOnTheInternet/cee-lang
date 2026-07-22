@@ -438,6 +438,39 @@ node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t
 	return node;
 }
 
+node_if_t *parse_if(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "if\n");
+	node_if_t *node = malloc(sizeof(node_if_t));
+	++*i;
+	if(tokens.value[*i].type != token_op_left_paren) {
+		LOG(PRN_GRN, "ERROR");
+		exit(1);
+	}
+	++*i;
+	node->expr_node = parse_expr(tokens, i);
+	++*i;
+	if(tokens.value[*i].type != token_op_right_paren) {
+		LOG(PRN_GRN, "ERROR");
+		exit(1);
+	}
+	node->if_branch = parse_statement(tokens, i);
+	++*i;
+	if(tokens.value[*i].type == token_keyword_else) {
+		node->type = node_if_else;
+		node->else_branch = parse_statement(tokens, i);
+		goto end;
+	}
+	node->type = node_if;
+	
+end:
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
