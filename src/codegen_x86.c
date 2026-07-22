@@ -135,7 +135,6 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 
 void generate_statement(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 	switch(node.type) {
 	case node_return:
 		LOG(PRN_YLW, "detected node_return");
@@ -173,7 +172,6 @@ void generate_statement(node_statement_t node) {
 
 void generate_compound_statement(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 	LOG(PRN_YLW, "%zu", node.compound_statement_node->statement_nodes.length);
 	// too lazy to change j to i
 	for(size_t j = 0; j < node.compound_statement_node->statement_nodes.length; j++) {
@@ -208,85 +206,83 @@ void generate_compound_statement(node_statement_t node) {
 			break;
 		}
 	}
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
+
 void generate_if(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("#begin %s\n", __func__);
 	static size_t num = 0;
+	LOG(PRN_YLW, "num = %zu", num);
+
 	generate_expr(*node.if_node->expr_node);
 	cmp("eax", "0");
 	print("\tje if%zu\n", num);
 	generate_statement(*node.if_node->if_branch);
+
+	if(node.if_node->type == node_if_else) {
+		print("\tjmp if%zu\n", num + 1);
+	}
+
 	print("if%zu:\n", num);
 	num++;
+	if(node.if_node->type == node_if_else) {
+		generate_statement(*node.if_node->else_branch);
+	}
+	print("if%zu:\n", num);
 
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_return(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	generate_expr(*node.return_node->expr_node);	
 	mov("edi", "eax");
 	mov("rax", "60");
 	print("\tsyscall\n");
 
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_var_decl(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	generate_expr(*node.var_decl_node->expr_node);
 	mov(var(node.var_decl_node->stack_offset), "eax");
 
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_label(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	print(".label_%s: # generate_label\n",
 		node.label_node->token.value);
 
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_goto(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	print("\tjmp .label_%s # generate_goto\n",
 		node.goto_node->token.value);
 
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_assignment(node_statement_t node) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	generate_expr(*node.assignment_node->rhs);
 	mov(var(node.assignment_node->lhs.stack_offset), "eax");
 
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_mul_expr(char **dest, node_mul_expr_t expr) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	if(expr.type == node_mul_expr) {
 		LOG(PRN_YLW, "expr.type == node_mul_expr");
@@ -319,13 +315,11 @@ void generate_mul_expr(char **dest, node_mul_expr_t expr) {
 	}
 
 end:
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_add_expr(char **dest, node_add_expr_t expr) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	if(expr.type == node_add_expr) {
 		LOG(PRN_YLW, "expr.type == node_add_expr");
@@ -367,13 +361,11 @@ void generate_add_expr(char **dest, node_add_expr_t expr) {
 	}
 	
 end:
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
 void generate_equal_expr(char **dest, node_equal_expr_t expr) {
 	LOG(PRN_YLW, "start");
-	print("# begin %s\n", __func__);
 
 	if(expr.type == node_equal_expr) {
 		LOG(PRN_YLW, "expr.type == node_equal_expr");
@@ -420,7 +412,6 @@ void generate_equal_expr(char **dest, node_equal_expr_t expr) {
 	}
 
 end:
-	print("# end %s\n", __func__);
 	LOG(PRN_YLW, "end");
 }
 
