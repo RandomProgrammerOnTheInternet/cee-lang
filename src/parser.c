@@ -467,6 +467,7 @@ node_if_t *parse_if(LIST(token_t) tokens, size_t *i) {
 		node->else_branch = parse_statement(tokens, i);
 		goto end;
 	}
+	--*i;
 	LOG(PRN_GRN, "no else");
 	node->type = node_if;
 	
