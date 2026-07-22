@@ -99,11 +99,11 @@ node_var_t parse_var(LIST(token_t) tokens, size_t *i) {
 		LOG(PRN_GRN, "loop: %s", curr_scope.vars.value[j].token.value);
 		if(!strcmp(tokens.value[*i].value, curr_scope.vars.value[j].token.value)) {
 			fprintf(tree, "var: %s %zu\n", tokens.value[*i].value, curr_scope.vars.value[j].stack_offset);
+			tree_offset--;
 			LOG(PRN_GRN, "end");
 			return curr_scope.vars.value[j];
 		}
 	}
-	tree_offset--;
 	LOG(PRN_GRN, "ERROR");
 	exit(1);
 }
@@ -405,6 +405,7 @@ node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i) {
 	++*i;
 	node->rhs = parse_expr(tokens, i);
 	LOG(PRN_GRN, "rhs set");
+	++*i;
 
 	tree_offset--;
 	LOG(PRN_GRN, "end");
