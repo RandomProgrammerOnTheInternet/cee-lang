@@ -139,11 +139,7 @@ typedef struct node_compound_statement {
 } node_compound_statement_t;
 
 typedef struct node_base {
-	node_type type;
-	union {
-		node_statement_t *statement_node;
-		node_expr_t *expr_node;
-	};
+	node_statement_t *statement_node;
 } node_base_t;
 
 NEW_LIST(node_var_t);

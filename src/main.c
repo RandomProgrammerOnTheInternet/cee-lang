@@ -59,6 +59,9 @@ void compile(int argc, char **argv) {
 
 	LIST(token_t) tokens = tokenize(src_str);
 	LOG(PRN_BLU, "converted string to %zu tokens", tokens.length);
+	for(size_t i = 0; i < tokens.length; i++) {
+		printf("%s | %lu\n", tokens.value[i].value, tokens.value[i].line_num);
+	}
 
 	LIST(node_base_t) base_node = parse(tokens);
 	LOG(PRN_BLU, "converted tokens to nodes");

@@ -73,7 +73,7 @@ static inline void sub(char *lhs, char *rhs) {
 	print("\tsub %s, %s\n", lhs, rhs);
 }
 
-static void generate_compound_statement(LIST(node_base_t) node, size_t *i);
+static void generate_compound_statement(node_statement_t node, size_t *i);
 static void generate_return(node_statement_t node, size_t *i);
 static void generate_var_decl(node_statement_t node, size_t *i);
 static void generate_label(node_statement_t node, size_t *i);
@@ -116,7 +116,7 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 			break;
 		case node_compound_statement:
 			LOG(PRN_YLW, "detected node_compound_statement");
-			generate_compound_statement(node, &i);
+			generate_compound_statement(*node.value[i].statement_node, &i);
 			continue;
 		default:
 			LOG(PRN_YLW, "default");
@@ -128,38 +128,38 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 	return asm_file;
 }
 
-void generate_compound_statement(LIST(node_base_t) node, size_t *i) {
+void generate_compound_statement(node_statement_t node, size_t *i) {
 	LOG(PRN_YLW, "start");
 	print("# begin %s\n", __func__);
-	LOG(PRN_YLW, "%zu", node.value[*i].statement_node->compound_statement_node->statement_nodes.length);
+	LOG(PRN_YLW, "%zu", node.compound_statement_node->statement_nodes.length);
 
-	for(size_t j = 0; j < node.value[*i].statement_node->compound_statement_node->statement_nodes.length; j++) {
+	for(size_t j = 0; j < node.compound_statement_node->statement_nodes.length; j++) {
 		LOG(PRN_YLW, "loop");
-		switch(node.value[*i].statement_node->compound_statement_node->statement_nodes.value[j]->type) {
+		switch(node.compound_statement_node->statement_nodes.value[j]->type) {
 		case node_return:
 			LOG(PRN_YLW, "detected node_return");
-			generate_return(*node.value[*i].statement_node->compound_statement_node->statement_nodes.value[j], &j);
+			generate_return(*node.compound_statement_node->statement_nodes.value[j], &j);
 			break;
 		case node_var_decl:
 			LOG(PRN_YLW, "detected node_var_decl");
-			generate_var_decl(*node.value[*i].statement_node->compound_statement_node->statement_nodes.value[j], &j);
+			generate_var_decl(*node.compound_statement_node->statement_nodes.value[j], &j);
 			break;
 		case node_label:
 			LOG(PRN_YLW, "detected node_label");
-			generate_label(*node.value[*i].statement_node->compound_statement_node->statement_nodes.value[j], &j);
+			generate_label(*node.compound_statement_node->statement_nodes.value[j], &j);
 			break;
 		case node_goto:
 			LOG(PRN_YLW, "detected node_goto");
-			generate_goto(*node.value[*i].statement_node->compound_statement_node->statement_nodes.value[j], &j);
+			generate_goto(*node.compound_statement_node->statement_nodes.value[j], &j);
 			break;
 		case node_assignment:
 			LOG(PRN_YLW, "detected node_assignment");
-			generate_assignment(*node.value[*i].statement_node->compound_statement_node->statement_nodes.value[j], &j);
+			generate_assignment(*node.compound_statement_node->statement_nodes.value[j], &j);
 			break;
 		case node_compound_statement:
 			LOG(PRN_YLW, "detected node_compound_statement");
-			generate_compound_statement(node, &j);
-			continue;
+			generate_compound_statement(*node.compound_statement_node->statement_nodes.value[j], &j);
+			break;
 		default:
 			LOG(PRN_YLW, "default");
 			break;

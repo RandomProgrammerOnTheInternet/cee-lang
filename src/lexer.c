@@ -131,12 +131,14 @@ token_t tokenize_identifier(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = j,
 				.value = buffer,
+				.line_num = line_number
 			};
 		}
 	}
 	return (token_t) {
 		.type = token_identifier,
 		.value = buffer,
+		.line_num = line_number
 	};
 }
 
@@ -147,6 +149,7 @@ token_t tokenize_int_literal(char *str, u64 start, u64 *i) {
 	return (token_t) {
 		.type = token_int_literal,
 		.value = substr(str, start, *i),
+		.line_num = line_number
 	};
 }
 
@@ -164,7 +167,8 @@ token_t tokenize_char_literal(char *str, u64 start, u64 *i) {
 	}
 	return (token_t) {
 		.type = token_char_literal,
-		.value = substr(str, start, *i)
+		.value = substr(str, start, *i),
+		.line_num = line_number
 	};
 }
 
@@ -176,6 +180,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_plus_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '+') {
@@ -183,11 +188,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_plus_plus,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_plus,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '-':
@@ -196,6 +203,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_minus_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '-') {
@@ -203,6 +211,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_minus_minus,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '>') {
@@ -210,11 +219,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_arrow,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_minus,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '*':
@@ -223,11 +234,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_asterisk_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_asterisk,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '/':
@@ -236,11 +249,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_slash_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_slash,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '%':
@@ -249,11 +264,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_percent_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_percent,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '&':
@@ -262,6 +279,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitwise_and_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '&') {
@@ -269,11 +287,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_boolean_and,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_bitwise_and,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '|':
@@ -282,6 +302,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitwise_or_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '|') {
@@ -289,11 +310,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_boolean_or,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_bitwise_or,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '^':
@@ -302,11 +325,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitwise_xor_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_bitwise_xor,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '<':
@@ -315,6 +340,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_less_than_equal_to,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '<' && str[*i + 1] == '=') {
@@ -322,6 +348,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitshift_left_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '<') {
@@ -329,11 +356,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitshift_left,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_less_than,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '>':
@@ -342,6 +371,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_greater_than_equal_to,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '>' && str[*i + 1] == '=') {
@@ -349,6 +379,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitshift_right_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		else if(str[*i] == '>') {
@@ -356,11 +387,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_bitshift_right,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_greater_than,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '!':
@@ -369,11 +402,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_not_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_boolean_not,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '=':
@@ -382,11 +417,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_equals_equals,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_equals,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '[':
@@ -395,11 +432,13 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_attr_begin,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_left_bracket,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case ']':
@@ -408,29 +447,34 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 			return (token_t) {
 				.type = token_op_attr_end,
 				.value = substr(str, start, *i),
+				.line_num = line_number
 			};
 		}
 		return (token_t) {
 			.type = token_op_right_bracket,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case ';':
 		return (token_t) {
 			.type = token_op_semicolon,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '{':
 		return (token_t) {
 			.type = token_op_left_curly_brace,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	case '}':
 		return (token_t) {
 			.type = token_op_right_curly_brace,
 			.value = substr(str, start, *i),
+			.line_num = line_number
 		};
 		break;
 	default:
@@ -440,6 +484,7 @@ token_t tokenize_operator(char *str, u64 start, u64 *i) {
 				return (token_t) {
 					.value = buffer,
 					.type = j,
+					.line_num = line_number
 				};
 			}
 		}
