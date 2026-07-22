@@ -24,7 +24,11 @@ typedef enum node_type : u8 {
 	node_add_expr,
 	node_equal_expr,
 	node_if,
-	node_if_else
+	node_if_else,
+	node_while,
+	node_do_while,
+	node_for,
+	node_decl_for,
 } node_type;
 
 typedef enum op_type : u8 {
@@ -34,7 +38,7 @@ typedef enum op_type : u8 {
 	op_div,
 	op_mod,
 	op_equ,
-	op_neq
+	op_neq,
 } op_type;
 
 typedef struct node_mul_expr node_mul_expr_t;
@@ -129,6 +133,12 @@ typedef struct node_if {
 	node_statement_t *else_branch;
 } node_if_t;
 
+typedef struct node_while {
+	node_type type;
+	node_expr_t *expr_node;
+	node_statement_t *body;
+} node_while_t;
+
 typedef struct node_compound_statement node_compound_statement_t;
 typedef struct node_statement {
 	node_type type;
@@ -140,6 +150,7 @@ typedef struct node_statement {
 		node_assignment_t *assignment_node;
 		node_compound_statement_t *compound_statement_node;
 		node_if_t *if_node;
+		node_while_t *while_node;
 	};
 } node_statement_t;
 
