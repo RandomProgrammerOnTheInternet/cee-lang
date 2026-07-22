@@ -30,6 +30,7 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 		case token_keyword_int: [[fallthrough]];
 		case token_keyword_return: [[fallthrough]];
 		case token_op_left_curly_brace: [[fallthrough]];
+		case token_keyword_if: [[fallthrough]];
 		case token_identifier:
 			LOG(PRN_GRN, "detected statement %s", tokens.value[i].value);
 			LIST_APPEND(base_node, ((node_base_t) {
@@ -456,13 +457,17 @@ node_if_t *parse_if(LIST(token_t) tokens, size_t *i) {
 		LOG(PRN_GRN, "ERROR");
 		exit(1);
 	}
+	++*i;
 	node->if_branch = parse_statement(tokens, i);
 	++*i;
 	if(tokens.value[*i].type == token_keyword_else) {
+		++*i;
+		LOG(PRN_GRN, "detected else");
 		node->type = node_if_else;
 		node->else_branch = parse_statement(tokens, i);
 		goto end;
 	}
+	LOG(PRN_GRN, "no else");
 	node->type = node_if;
 	
 end:
@@ -513,6 +518,15 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		tree_offset--;
 		LOG(PRN_GRN, "end left curly");
+		return node;
+	case token_keyword_if:
+		LOG(PRN_GRN, "detected keyword if");
+		*node = (node_statement_t) {
+			.type = node_if,
+			.if_node = parse_if(tokens, i)
+		};
+		tree_offset--;
+		LOG(PRN_GRN, "end if");
 		return node;
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);

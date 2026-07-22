@@ -139,7 +139,7 @@ typedef struct node_statement {
 		node_goto_t *goto_node;
 		node_assignment_t *assignment_node;
 		node_compound_statement_t *compound_statement_node;
-		node_if_t if_node;
+		node_if_t *if_node;
 	};
 } node_statement_t;
 
