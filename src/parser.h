@@ -189,6 +189,7 @@ node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i);
 node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i);
 node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i);
 node_if_t *parse_if(LIST(token_t) tokens, size_t *i);
+node_while_t *parse_while(LIST(token_t) tokens, size_t *i);
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i);
 
 bool identifier_is_var(token_t token);

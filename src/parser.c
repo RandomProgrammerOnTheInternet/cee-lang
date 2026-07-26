@@ -31,6 +31,7 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 		case token_keyword_return: [[fallthrough]];
 		case token_op_left_curly_brace: [[fallthrough]];
 		case token_keyword_if: [[fallthrough]];
+		case token_keyword_while: [[fallthrough]];
 		case token_identifier:
 			LOG(PRN_GRN, "detected statement %s", tokens.value[i].value);
 			LIST_APPEND(base_node, ((node_base_t) {
@@ -400,7 +401,7 @@ node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "set lhs");
 	++*i;
 	if(tokens.value[*i].type != token_op_equals) {
-		LOG(PRN_GRN, "ERROR");
+		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
 		exit(1);
 	}
 	++*i;
@@ -477,6 +478,63 @@ end:
 	return node;
 }
 
+node_while_t *parse_while(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	node_while_t *node = malloc(sizeof(node_while_t));
+	if(tokens.value[*i].type == token_keyword_while) {
+		LOG(PRN_GRN, "while");
+		fprintf(tree, "while\n");
+		node->type = node_while;
+		++*i;
+		if(tokens.value[*i].type != token_op_left_paren) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+		++*i;
+		node->expr_node = parse_expr(tokens, i);
+		++*i;
+		if(tokens.value[*i].type != token_op_right_paren) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+		++*i;
+		node->body = parse_statement(tokens, i);
+	}
+	else {
+		LOG(PRN_GRN, "do_while");
+		fprintf(tree, "do_while\n");
+		node->type = node_do_while;
+		++*i;
+		node->body = parse_statement(tokens, i);
+		++*i;
+		if(tokens.value[*i].type != token_keyword_while) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+		++*i;
+		if(tokens.value[*i].type != token_op_left_paren) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+		++*i;
+		node->expr_node = parse_expr(tokens, i);
+		if(tokens.value[*i].type != token_op_right_paren) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+		++*i;
+		if(tokens.value[*i].type != token_op_semicolon) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+	}
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -528,6 +586,15 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		tree_offset--;
 		LOG(PRN_GRN, "end if");
+		return node;
+	case token_keyword_while:
+		LOG(PRN_GRN, "detected keyword while");
+		*node = (node_statement_t) {
+			.type = node_while,
+			.while_node = parse_while(tokens, i)
+		};
+		tree_offset--;
+		LOG(PRN_GRN, "end while");
 		return node;
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);
