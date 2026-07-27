@@ -32,6 +32,7 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 		case token_op_left_curly_brace: [[fallthrough]];
 		case token_keyword_if: [[fallthrough]];
 		case token_keyword_while: [[fallthrough]];
+		case token_keyword_do: [[fallthrough]];
 		case token_identifier:
 			LOG(PRN_GRN, "detected statement %s", tokens.value[i].value);
 			LIST_APPEND(base_node, ((node_base_t) {
@@ -520,6 +521,7 @@ node_while_t *parse_while(LIST(token_t) tokens, size_t *i) {
 		}
 		++*i;
 		node->expr_node = parse_expr(tokens, i);
+		++*i;
 		if(tokens.value[*i].type != token_op_right_paren) {
 			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
 			exit(1);
@@ -595,6 +597,15 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		tree_offset--;
 		LOG(PRN_GRN, "end while");
+		return node;
+	case token_keyword_do:
+		LOG(PRN_GRN, "detected keyword do");
+		*node = (node_statement_t) {
+			.type = node_while,
+			.while_node = parse_while(tokens, i)
+		};
+		tree_offset--;
+		LOG(PRN_GRN, "end do");
 		return node;
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);

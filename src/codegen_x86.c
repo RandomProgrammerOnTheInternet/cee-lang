@@ -217,15 +217,25 @@ void generate_while(node_statement_t node) {
 	LOG(PRN_YLW, "start");
 	static size_t num = 0;
 	LOG(PRN_YLW, "num = %zu", num);
-	print("while%zu:\n", num);
-	generate_expr(*node.if_node->expr_node);
-	test("eax", "eax");
-	print("\tje while%zu\n", num + 1);
-	generate_statement(*node.while_node->body);
-	print("\tjmp while%zu\n", num);
-	num++;
-	print("while%zu:\n", num);
-	num++;
+	if(node.while_node->type == node_while) {
+		print("while%zu:\n", num);
+		generate_expr(*node.if_node->expr_node);
+		test("eax", "eax");
+		print("\tje while%zu\n", num + 1);
+		generate_statement(*node.while_node->body);
+		print("\tjmp while%zu\n", num);
+		num++;
+		print("while%zu:\n", num);
+		num++;
+	}
+	else {
+		print("while%zu:\n", num);
+		generate_statement(*node.while_node->body);
+		generate_expr(*node.if_node->expr_node);
+		test("eax", "eax");
+		print("\tjne while%zu\n", num);
+		num++;
+	}
 
 	LOG(PRN_YLW, "end");
 }
