@@ -45,6 +45,10 @@ static inline void cmp(char *lhs, char *rhs) {
 	print("\tcmp %s, %s\n", lhs, rhs);
 }
 
+static inline void test(char *lhs, char *rhs) {
+	print("\ttest %s, %s\n", lhs, rhs);
+}
+
 static inline void sete(char *s) {
 	print("\tsete %s\n", s);
 }
@@ -73,8 +77,10 @@ static inline void sub(char *lhs, char *rhs) {
 	print("\tsub %s, %s\n", lhs, rhs);
 }
 
+static void generate_statement(node_statement_t node);
 static void generate_compound_statement(node_statement_t node);
 static void generate_if(node_statement_t node);
+static void generate_while(node_statement_t node);
 static void generate_return(node_statement_t node);
 static void generate_var_decl(node_statement_t node);
 static void generate_label(node_statement_t node);
@@ -94,39 +100,7 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 		  "_start:\n");
 	for(size_t i = 0; i < node.length; i++) {
 		LOG(PRN_YLW, "loop");
-		switch(node.value[i].statement_node->type) {
-		case node_return:
-			LOG(PRN_YLW, "detected node_return");
-			generate_return(*node.value[i].statement_node);
-			break;
-		case node_var_decl:
-			LOG(PRN_YLW, "detected node_var_decl");
-			generate_var_decl(*node.value[i].statement_node);
-			break;
-		case node_label:
-			LOG(PRN_YLW, "detected node_label");
-			generate_label(*node.value[i].statement_node);
-			break;
-		case node_goto:
-			LOG(PRN_YLW, "detected node_goto");
-			generate_goto(*node.value[i].statement_node);
-			break;
-		case node_assignment:
-			LOG(PRN_YLW, "detected node_assignment");
-			generate_assignment(*node.value[i].statement_node);
-			break;
-		case node_compound_statement:
-			LOG(PRN_YLW, "detected node_compound_statement");
-			generate_compound_statement(*node.value[i].statement_node);
-			break;
-		case node_if:
-			LOG(PRN_YLW, "detected node_if");
-			generate_if(*node.value[i].statement_node);
-			break;
-		default:
-			LOG(PRN_YLW, "default");
-			break;
-		}
+		generate_statement(*node.value[i].statement_node);
 	}
 //	LIST_FREE(node);
 	
@@ -163,6 +137,10 @@ void generate_statement(node_statement_t node) {
 	case node_if:
 		LOG(PRN_YLW, "detected node_if");
 		generate_if(node);
+		break;
+	case node_while:
+		LOG(PRN_YLW, "detected node_while");
+		generate_while(node);
 		break;
 	default:
 		LOG(PRN_YLW, "default");
@@ -216,7 +194,7 @@ void generate_if(node_statement_t node) {
 	LOG(PRN_YLW, "num = %zu", num);
 
 	generate_expr(*node.if_node->expr_node);
-	cmp("eax", "0");
+	test("eax", "eax"); // thank you therealblue24 for this tip
 	print("\tje if%zu\n", num);
 	generate_statement(*node.if_node->if_branch);
 
@@ -228,8 +206,26 @@ void generate_if(node_statement_t node) {
 	num++;
 	if(node.if_node->type == node_if_else) {
 		generate_statement(*node.if_node->else_branch);
+		print("if%zu:\n", num);
+		num++;
 	}
-	print("if%zu:\n", num);
+
+	LOG(PRN_YLW, "end");
+}
+
+void generate_while(node_statement_t node) {
+	LOG(PRN_YLW, "start");
+	static size_t num = 0;
+	LOG(PRN_YLW, "num = %zu", num);
+	print("while%zu:\n", num);
+	generate_expr(*node.if_node->expr_node);
+	test("eax", "eax");
+	print("\tje while%zu\n", num + 1);
+	generate_statement(*node.while_node->body);
+	print("\tjmp while%zu\n", num);
+	num++;
+	print("while%zu:\n", num);
+	num++;
 
 	LOG(PRN_YLW, "end");
 }
