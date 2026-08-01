@@ -18,7 +18,7 @@ typedef enum node_type : u8 {
 	node_compound_statement,
 	node_label,
 	node_goto,
-	node_assignment,
+	node_assign_expr,
 	node_prim_expr,
 	node_mul_expr,
 	node_add_expr,
@@ -44,6 +44,7 @@ typedef enum op_type : u8 {
 typedef struct node_mul_expr node_mul_expr_t;
 typedef struct node_add_expr node_add_expr_t;
 typedef struct node_equal_expr node_equal_expr_t;
+typedef struct node_assign_expr node_assign_expr_t;
 
 typedef struct node_int_lit {
 	token_t token;
@@ -98,8 +99,19 @@ typedef struct node_equal_expr {
 	};
 } node_equal_expr_t;
 
+typedef struct node_assign_expr {
+	node_type type;
+	union {
+		node_equal_expr_t *equal_expr_node;
+		struct {
+			node_var_t lhs;
+			node_equal_expr_t *rhs;
+		};
+	};
+} node_assign_expr_t;
+
 typedef struct node_expr {
-	node_equal_expr_t *equal_expr_node;
+	node_assign_expr_t *assign_expr_node;
 } node_expr_t;
 
 typedef struct node_var_decl {
@@ -107,11 +119,6 @@ typedef struct node_var_decl {
 	size_t stack_offset;
 	node_expr_t *expr_node;
 } node_var_decl_t;
-
-typedef struct node_assignment {
-	node_var_t lhs;
-	node_expr_t *rhs;
-} node_assignment_t;
 
 typedef struct node_return {
 	node_expr_t *expr_node;
@@ -147,10 +154,10 @@ typedef struct node_statement {
 		node_return_t *return_node;
 		node_label_t *label_node;
 		node_goto_t *goto_node;
-		node_assignment_t *assignment_node;
 		node_compound_statement_t *compound_statement_node;
 		node_if_t *if_node;
 		node_while_t *while_node;
+		node_expr_t *expr_node;
 	};
 } node_statement_t;
 
@@ -186,7 +193,7 @@ node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i);
 node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i);
 node_label_t *parse_label(LIST(token_t) tokens, size_t *i);
 node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i);
-node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i);
+node_assign_expr_t *parse_assign_expr(LIST(token_t) tokens, size_t *i);
 node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i);
 node_if_t *parse_if(LIST(token_t) tokens, size_t *i);
 node_while_t *parse_while(LIST(token_t) tokens, size_t *i);

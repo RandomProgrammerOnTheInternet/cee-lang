@@ -85,10 +85,10 @@ static void generate_return(node_statement_t node);
 static void generate_var_decl(node_statement_t node);
 static void generate_label(node_statement_t node);
 static void generate_goto(node_statement_t node);
-static void generate_assignment(node_statement_t node);
 static void generate_mul_expr(char **dest, node_mul_expr_t expr);
 static void generate_add_expr(char **dest, node_add_expr_t expr);
 static void generate_equal_expr(char **dest, node_equal_expr_t expr);
+static void generate_assign_expr(char **dest, node_assign_expr_t node);
 static void generate_expr(node_expr_t expr);
 
 FILE *generate_asm_x86(LIST(node_base_t) node) {
@@ -126,10 +126,6 @@ void generate_statement(node_statement_t node) {
 		LOG(PRN_YLW, "detected node_goto");
 		generate_goto(node);
 		break;
-	case node_assignment:
-		LOG(PRN_YLW, "detected node_assignment");
-		generate_assignment(node);
-		break;
 	case node_compound_statement:
 		LOG(PRN_YLW, "detected node_compound_statement");
 		generate_compound_statement(node);
@@ -141,6 +137,10 @@ void generate_statement(node_statement_t node) {
 	case node_while:
 		LOG(PRN_YLW, "detected node_while");
 		generate_while(node);
+		break;
+	case node_expr:
+		LOG(PRN_YLW, "detected node_expr");
+		generate_expr(*node.expr_node);
 		break;
 	default:
 		LOG(PRN_YLW, "default");
@@ -171,13 +171,13 @@ void generate_compound_statement(node_statement_t node) {
 			LOG(PRN_YLW, "detected node_goto");
 			generate_goto(*node.compound_statement_node->statement_nodes.value[j]);
 			break;
-		case node_assignment:
-			LOG(PRN_YLW, "detected node_assignment");
-			generate_assignment(*node.compound_statement_node->statement_nodes.value[j]);
-			break;
 		case node_compound_statement:
 			LOG(PRN_YLW, "detected node_compound_statement");
 			generate_compound_statement(*node.compound_statement_node->statement_nodes.value[j]);
+			break;
+		case node_expr:
+			LOG(PRN_YLW, "detected node_expr");
+			generate_expr(*node.compound_statement_node->statement_nodes.value[j]->expr_node);
 			break;
 		default:
 			LOG(PRN_YLW, "default");
@@ -274,15 +274,6 @@ void generate_goto(node_statement_t node) {
 
 	print("\tjmp .label_%s # generate_goto\n",
 		node.goto_node->token.value);
-
-	LOG(PRN_YLW, "end");
-}
-
-void generate_assignment(node_statement_t node) {
-	LOG(PRN_YLW, "start");
-
-	generate_expr(*node.assignment_node->rhs);
-	mov(var(node.assignment_node->lhs.stack_offset), "eax");
 
 	LOG(PRN_YLW, "end");
 }
@@ -421,8 +412,23 @@ end:
 	LOG(PRN_YLW, "end");
 }
 
+void generate_assign_expr(char **dest, node_assign_expr_t node) {
+	LOG(PRN_YLW, "start");
+
+	if(node.type == node_equal_expr) {
+		generate_equal_expr(dest, *node.equal_expr_node);
+	}
+	else {
+		generate_equal_expr(dest, *node.rhs);
+		mov(var(node.lhs.stack_offset), "eax");
+	}
+
+	LOG(PRN_YLW, "end");
+}
+
+
 void generate_expr(node_expr_t expr) {
 	LOG(PRN_YLW, "start");
-	generate_equal_expr(&expr_reg[0], *expr.equal_expr_node);
+	generate_assign_expr(&expr_reg[0], *expr.assign_expr_node);
 	LOG(PRN_YLW, "end");
 }

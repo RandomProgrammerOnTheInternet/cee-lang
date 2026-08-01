@@ -148,7 +148,7 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	print_offset();
 	fprintf(tree, "expr\n");
 	node_expr_t *node = malloc(sizeof(node_expr_t));
-	node->equal_expr_node = parse_equal_expr(tokens, i);
+	node->assign_expr_node = parse_assign_expr(tokens, i);
 
 	tree_offset--;
 	LOG(PRN_GRN, "end");
@@ -298,6 +298,37 @@ node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i) {
 	}
 }
 
+node_assign_expr_t *parse_assign_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "assign_expr\n");
+	node_assign_expr_t *node = malloc(sizeof(node_assign_expr_t));
+	if(tokens.value[*i + 1].type != token_op_equals) {
+		node->type = node_equal_expr;
+		node->equal_expr_node = parse_equal_expr(tokens, i);
+		goto end;
+	}
+	node->type = node_assign_expr;
+	node->lhs = parse_var(tokens, i);
+	LOG(PRN_GRN, "set lhs");
+	++*i;
+	if(tokens.value[*i].type != token_op_equals) {
+		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+		exit(1);
+	}
+	++*i;
+	node->rhs = parse_equal_expr(tokens, i);
+	LOG(PRN_GRN, "rhs set");
+	++*i;
+
+end:
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
+
 node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -386,29 +417,6 @@ node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i) {
 	*node = (node_goto_t) {
 		.token = tokens.value[*i - 1]
 	};
-
-	tree_offset--;
-	LOG(PRN_GRN, "end");
-	return node;
-}
-
-node_assignment_t *parse_assignment(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	tree_offset++;
-	print_offset();
-	fprintf(tree, "assignment\n");
-	node_assignment_t *node = malloc(sizeof(node_assignment_t));
-	node->lhs = parse_var(tokens, i);
-	LOG(PRN_GRN, "set lhs");
-	++*i;
-	if(tokens.value[*i].type != token_op_equals) {
-		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
-		exit(1);
-	}
-	++*i;
-	node->rhs = parse_expr(tokens, i);
-	LOG(PRN_GRN, "rhs set");
-	++*i;
 
 	tree_offset--;
 	LOG(PRN_GRN, "end");
@@ -612,8 +620,8 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		if(identifier_is_var(tokens.value[*i])) {
 			LOG(PRN_GRN, "identifier is var");
 			*node = (node_statement_t) {
-				.type = node_assignment,
-				.assignment_node = parse_assignment(tokens, i)
+				.type = node_expr,
+				.expr_node = parse_expr(tokens, i)
 			};
 			tree_offset--;
 			return node;
