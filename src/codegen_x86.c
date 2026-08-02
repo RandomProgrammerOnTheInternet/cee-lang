@@ -5,9 +5,26 @@
 FILE *asm_file = NULL;
 static const char *expr_reg[] = {"eax", "ecx", "edx", "ebx"};
 
+static void generate_statement(node_statement_t node);
+static void generate_compound_statement(node_compound_statement_t node);
+static void generate_if(node_if_t node);
+static void generate_while(node_while_t node);
+static void generate_for(node_for_t node);
+static void generate_return(node_return_t node);
+static void generate_var_decl(node_var_decl_t node);
+static void generate_label(node_label_t node);
+static void generate_goto(node_goto_t node);
+static void generate_mul_expr(char **dest, node_mul_expr_t expr);
+static void generate_add_expr(char **dest, node_add_expr_t expr);
+static void generate_equal_expr(char **dest, node_equal_expr_t expr);
+static void generate_assign_expr(char **dest, node_assign_expr_t node);
+static void generate_expr(node_expr_t expr);
+
 static inline char **next_expr_reg(char **reg) {
 	return reg + 1;
 }
+
+/* instructions */
 
 static inline char *var(size_t stack_offset) {
 	char *str = malloc(24); // size of string (17) + extra for number digits (7 digits)
@@ -77,20 +94,6 @@ static inline void sub(char *lhs, char *rhs) {
 	print("\tsub %s, %s\n", lhs, rhs);
 }
 
-static void generate_statement(node_statement_t node);
-static void generate_compound_statement(node_statement_t node);
-static void generate_if(node_statement_t node);
-static void generate_while(node_statement_t node);
-static void generate_return(node_statement_t node);
-static void generate_var_decl(node_statement_t node);
-static void generate_label(node_statement_t node);
-static void generate_goto(node_statement_t node);
-static void generate_mul_expr(char **dest, node_mul_expr_t expr);
-static void generate_add_expr(char **dest, node_add_expr_t expr);
-static void generate_equal_expr(char **dest, node_equal_expr_t expr);
-static void generate_assign_expr(char **dest, node_assign_expr_t node);
-static void generate_expr(node_expr_t expr);
-
 FILE *generate_asm_x86(LIST(node_base_t) node) {
 	LOG(PRN_YLW, "called generate_asm(): x86 backend");
 	asm_file = fopen("out.asm", "w");
@@ -112,31 +115,35 @@ void generate_statement(node_statement_t node) {
 	switch(node.type) {
 	case node_return:
 		LOG(PRN_YLW, "detected node_return");
-		generate_return(node);
+		generate_return(*node.return_node);
 		break;
 	case node_var_decl:
 		LOG(PRN_YLW, "detected node_var_decl");
-		generate_var_decl(node);
+		generate_var_decl(*node.var_decl_node);
 		break;
 	case node_label:
 		LOG(PRN_YLW, "detected node_label");
-		generate_label(node);
+		generate_label(*node.label_node);
 		break;
 	case node_goto:
 		LOG(PRN_YLW, "detected node_goto");
-		generate_goto(node);
+		generate_goto(*node.goto_node);
 		break;
 	case node_compound_statement:
 		LOG(PRN_YLW, "detected node_compound_statement");
-		generate_compound_statement(node);
+		generate_compound_statement(*node.compound_statement_node);
 		break;
 	case node_if:
 		LOG(PRN_YLW, "detected node_if");
-		generate_if(node);
+		generate_if(*node.if_node);
 		break;
 	case node_while:
 		LOG(PRN_YLW, "detected node_while");
-		generate_while(node);
+		generate_while(*node.while_node);
+		break;
+	case node_for:
+		LOG(PRN_YLW, "detected node_for");
+		generate_for(*node.for_node);
 		break;
 	case node_expr:
 		LOG(PRN_YLW, "detected node_expr");
@@ -148,36 +155,36 @@ void generate_statement(node_statement_t node) {
 	}
 }
 
-void generate_compound_statement(node_statement_t node) {
+void generate_compound_statement(node_compound_statement_t node) {
 	LOG(PRN_YLW, "start");
-	LOG(PRN_YLW, "%zu", node.compound_statement_node->statement_nodes.length);
-	// too lazy to change j to i
-	for(size_t j = 0; j < node.compound_statement_node->statement_nodes.length; j++) {
+	LOG(PRN_YLW, "%zu", node.statement_nodes.length);
+
+	for(size_t i = 0; i < node.statement_nodes.length; i++) {
 		LOG(PRN_YLW, "loop");
-		switch(node.compound_statement_node->statement_nodes.value[j]->type) {
+		switch(node.statement_nodes.value[i]->type) {
 		case node_return:
 			LOG(PRN_YLW, "detected node_return");
-			generate_return(*node.compound_statement_node->statement_nodes.value[j]);
+			generate_return(*node.statement_nodes.value[i]->return_node);
 			break;
 		case node_var_decl:
 			LOG(PRN_YLW, "detected node_var_decl");
-			generate_var_decl(*node.compound_statement_node->statement_nodes.value[j]);
+			generate_var_decl(*node.statement_nodes.value[i]->var_decl_node);
 			break;
 		case node_label:
 			LOG(PRN_YLW, "detected node_label");
-			generate_label(*node.compound_statement_node->statement_nodes.value[j]);
+			generate_label(*node.statement_nodes.value[i]->label_node);
 			break;
 		case node_goto:
 			LOG(PRN_YLW, "detected node_goto");
-			generate_goto(*node.compound_statement_node->statement_nodes.value[j]);
+			generate_goto(*node.statement_nodes.value[i]->goto_node);
 			break;
 		case node_compound_statement:
 			LOG(PRN_YLW, "detected node_compound_statement");
-			generate_compound_statement(*node.compound_statement_node->statement_nodes.value[j]);
+			generate_compound_statement(*node.statement_nodes.value[i]->compound_statement_node);
 			break;
 		case node_expr:
 			LOG(PRN_YLW, "detected node_expr");
-			generate_expr(*node.compound_statement_node->statement_nodes.value[j]->expr_node);
+			generate_expr(*node.statement_nodes.value[i]->expr_node);
 			break;
 		default:
 			LOG(PRN_YLW, "default");
@@ -188,24 +195,24 @@ void generate_compound_statement(node_statement_t node) {
 }
 
 
-void generate_if(node_statement_t node) {
+void generate_if(node_if_t node) {
 	LOG(PRN_YLW, "start");
 	static size_t num = 0;
 	LOG(PRN_YLW, "num = %zu", num);
 
-	generate_expr(*node.if_node->expr_node);
+	generate_expr(*node.expr_node);
 	test("eax", "eax"); // thank you therealblue24 for this tip
 	print("\tje if%zu\n", num);
-	generate_statement(*node.if_node->if_branch);
+	generate_statement(*node.if_branch);
 
-	if(node.if_node->type == node_if_else) {
+	if(node.type == node_if_else) {
 		print("\tjmp if%zu\n", num + 1);
 	}
 
 	print("if%zu:\n", num);
 	num++;
-	if(node.if_node->type == node_if_else) {
-		generate_statement(*node.if_node->else_branch);
+	if(node.type == node_if_else) {
+		generate_statement(*node.else_branch);
 		print("if%zu:\n", num);
 		num++;
 	}
@@ -213,16 +220,16 @@ void generate_if(node_statement_t node) {
 	LOG(PRN_YLW, "end");
 }
 
-void generate_while(node_statement_t node) {
+void generate_while(node_while_t node) {
 	LOG(PRN_YLW, "start");
 	static size_t num = 0;
 	LOG(PRN_YLW, "num = %zu", num);
-	if(node.while_node->type == node_while) {
+	if(node.type == node_while) {
 		print("while%zu:\n", num);
-		generate_expr(*node.if_node->expr_node);
+		generate_expr(*node.expr_node);
 		test("eax", "eax");
 		print("\tje while%zu\n", num + 1);
-		generate_statement(*node.while_node->body);
+		generate_statement(*node.body);
 		print("\tjmp while%zu\n", num);
 		num++;
 		print("while%zu:\n", num);
@@ -230,8 +237,8 @@ void generate_while(node_statement_t node) {
 	}
 	else {
 		print("while%zu:\n", num);
-		generate_statement(*node.while_node->body);
-		generate_expr(*node.if_node->expr_node);
+		generate_statement(*node.body);
+		generate_expr(*node.expr_node);
 		test("eax", "eax");
 		print("\tjne while%zu\n", num);
 		num++;
@@ -240,10 +247,34 @@ void generate_while(node_statement_t node) {
 	LOG(PRN_YLW, "end");
 }
 
-void generate_return(node_statement_t node) {
+void generate_for(node_for_t node) {
+	LOG(PRN_YLW, "start");
+	static size_t num = 0;
+	LOG(PRN_YLW, "num = %zu", num);
+	if(node.type == node_decl_for) {
+		generate_var_decl(*node.var_decl_node);
+	}
+	else {
+		generate_expr(*node.expr1);
+	}
+	print("for%zu:\n", num);
+	generate_expr(*node.expr2);
+	test("eax", "eax");
+	print("\tje for%zu\n", num + 1);
+	generate_statement(*node.body);
+	generate_expr(*node.expr3);
+	print("\tjmp for%zu\n", num);
+	num++;
+	print("for%zu:\n", num);
+	num++;
+	
+	LOG(PRN_YLW, "end");
+}
+
+void generate_return(node_return_t node) {
 	LOG(PRN_YLW, "start");
 
-	generate_expr(*node.return_node->expr_node);	
+	generate_expr(*node.expr_node);	
 	mov("edi", "eax");
 	mov("rax", "60");
 	print("\tsyscall\n");
@@ -251,29 +282,29 @@ void generate_return(node_statement_t node) {
 	LOG(PRN_YLW, "end");
 }
 
-void generate_var_decl(node_statement_t node) {
+void generate_var_decl(node_var_decl_t node) {
 	LOG(PRN_YLW, "start");
 
-	generate_expr(*node.var_decl_node->expr_node);
-	mov(var(node.var_decl_node->stack_offset), "eax");
+	generate_expr(*node.expr_node);
+	mov(var(node.stack_offset), "eax");
 
 	LOG(PRN_YLW, "end");
 }
 
-void generate_label(node_statement_t node) {
+void generate_label(node_label_t node) {
 	LOG(PRN_YLW, "start");
 
 	print(".label_%s: # generate_label\n",
-		node.label_node->token.value);
+		node.token.value);
 
 	LOG(PRN_YLW, "end");
 }
 
-void generate_goto(node_statement_t node) {
+void generate_goto(node_goto_t node) {
 	LOG(PRN_YLW, "start");
 
 	print("\tjmp .label_%s # generate_goto\n",
-		node.goto_node->token.value);
+		node.token.value);
 
 	LOG(PRN_YLW, "end");
 }
