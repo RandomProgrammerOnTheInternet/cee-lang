@@ -33,6 +33,7 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 		case token_keyword_if: [[fallthrough]];
 		case token_keyword_while: [[fallthrough]];
 		case token_keyword_do: [[fallthrough]];
+		case token_keyword_for: [[fallthrough]];
 		case token_identifier:
 			LOG(PRN_GRN, "detected statement %s", tokens.value[i].value);
 			LIST_APPEND(base_node, ((node_base_t) {
@@ -545,6 +546,52 @@ node_while_t *parse_while(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
+node_for_t *parse_for(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "for\n");
+	node_for_t *node = malloc(sizeof(node_for_t));
+	++*i;
+	if(tokens.value[*i].type != token_op_left_paren) {
+		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+		exit(1);
+	}
+	++*i;
+	if(tokens.value[*i].type == token_keyword_int) {
+		node->type = node_decl_for;
+		node->var_decl_node = parse_var_decl(tokens, i);
+	}
+	else {
+		node->type = node_for;
+		node->expr1 = parse_expr(tokens, i);
+		++*i;
+		if(tokens.value[*i].type != token_op_semicolon) {
+			LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+			exit(1);
+		}
+	}
+	++*i;
+	node->expr2 = parse_expr(tokens, i);
+	++*i;
+	if(tokens.value[*i].type != token_op_semicolon) {
+		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+		exit(1);
+	}
+	++*i;
+	node->expr3 = parse_expr(tokens, i);
+	if(tokens.value[*i].type != token_op_right_paren) {
+		LOG(PRN_GRN, "ERROR %s", tokens.value[*i].value);
+		exit(1);
+	}
+	++*i;
+	node->body = parse_statement(tokens, i);
+
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -614,6 +661,15 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		tree_offset--;
 		LOG(PRN_GRN, "end do");
+		return node;
+	case token_keyword_for:
+		LOG(PRN_GRN, "detected keyword for");
+		*node = (node_statement_t) {
+			.type = node_for,
+			.for_node = parse_for(tokens, i)
+		};
+		tree_offset--;
+		LOG(PRN_GRN, "end for");
 		return node;
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);

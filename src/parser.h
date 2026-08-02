@@ -146,6 +146,15 @@ typedef struct node_while {
 	node_statement_t *body;
 } node_while_t;
 
+typedef struct node_for {
+	node_type type;
+	node_var_decl_t *var_decl_node;
+	node_expr_t *expr1;
+	node_expr_t *expr2;
+	node_expr_t *expr3;
+	node_statement_t *body;
+} node_for_t;
+
 typedef struct node_compound_statement node_compound_statement_t;
 typedef struct node_statement {
 	node_type type;
@@ -157,6 +166,7 @@ typedef struct node_statement {
 		node_compound_statement_t *compound_statement_node;
 		node_if_t *if_node;
 		node_while_t *while_node;
+		node_for_t *for_node;
 		node_expr_t *expr_node;
 	};
 } node_statement_t;
