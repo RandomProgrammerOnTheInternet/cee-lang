@@ -202,18 +202,18 @@ void generate_if(node_if_t node) {
 
 	generate_expr(*node.expr_node);
 	test("eax", "eax"); // thank you therealblue24 for this tip
-	print("\tje if%zu\n", num);
+	print("\tje .Lif%zu\n", num);
 	generate_statement(*node.if_branch);
 
 	if(node.type == node_if_else) {
-		print("\tjmp if%zu\n", num + 1);
+		print("\tjmp .Lif%zu\n", num + 1);
 	}
 
-	print("if%zu:\n", num);
+	print(".Lif%zu:\n", num);
 	num++;
 	if(node.type == node_if_else) {
 		generate_statement(*node.else_branch);
-		print("if%zu:\n", num);
+		print(".Lif%zu:\n", num);
 		num++;
 	}
 
@@ -225,22 +225,22 @@ void generate_while(node_while_t node) {
 	static size_t num = 0;
 	LOG(PRN_YLW, "num = %zu", num);
 	if(node.type == node_while) {
-		print("while%zu:\n", num);
+		print(".Lwhile%zu:\n", num);
 		generate_expr(*node.expr_node);
 		test("eax", "eax");
-		print("\tje while%zu\n", num + 1);
+		print("\tje .Lwhile%zu\n", num + 1);
 		generate_statement(*node.body);
-		print("\tjmp while%zu\n", num);
+		print("\tjmp .Lwhile%zu\n", num);
 		num++;
-		print("while%zu:\n", num);
+		print(".Lwhile%zu:\n", num);
 		num++;
 	}
 	else {
-		print("while%zu:\n", num);
+		print(".Lwhile%zu:\n", num);
 		generate_statement(*node.body);
 		generate_expr(*node.expr_node);
 		test("eax", "eax");
-		print("\tjne while%zu\n", num);
+		print("\tjne .Lwhile%zu\n", num);
 		num++;
 	}
 
@@ -257,15 +257,15 @@ void generate_for(node_for_t node) {
 	else {
 		generate_expr(*node.expr1);
 	}
-	print("for%zu:\n", num);
+	print(".Lfor%zu:\n", num);
 	generate_expr(*node.expr2);
 	test("eax", "eax");
-	print("\tje for%zu\n", num + 1);
+	print("\tje .Lfor%zu\n", num + 1);
 	generate_statement(*node.body);
 	generate_expr(*node.expr3);
-	print("\tjmp for%zu\n", num);
+	print("\tjmp .Lfor%zu\n", num);
 	num++;
-	print("for%zu:\n", num);
+	print(".Lfor%zu:\n", num);
 	num++;
 	
 	LOG(PRN_YLW, "end");
