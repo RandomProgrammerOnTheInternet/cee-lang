@@ -29,7 +29,7 @@ static inline char **next_expr_reg(char **reg) {
 
 static inline char *var(size_t stack_offset) {
 	char *str = malloc(24); // size of string (17) + extra for number digits (7 digits)
-	sprintf(str, "dword ptr [rsp-%zu]", stack_offset);
+	sprintf(str, "dword ptr [rbp-%zu]", stack_offset);
 	return str;
 }
 
