@@ -73,7 +73,7 @@ void compile(int argc, char **argv) {
 #ifdef __APPLE__
 		system("cc out.asm");
 #else
-		system("as -o out.o out.asm && ld out.o");
+		system("as -o out.o out.asm && gcc out.o");
 #endif
 	}
 	LOG(PRN_BLU, "assembled");

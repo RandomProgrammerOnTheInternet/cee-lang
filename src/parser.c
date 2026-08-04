@@ -76,6 +76,8 @@ node_fn_decl_t *parse_fn_decl(LIST(token_t) tokens, size_t *i) {
 		.body = fn.body
 	};
 
+	tree_offset--;
+	LOG(PRN_GRN, "end");
 	return fn_decl;
 }
 

@@ -99,9 +99,7 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 	LOG(PRN_YLW, "called generate_asm(): x86 backend");
 	asm_file = fopen("out.asm", "w");
 	LOG(PRN_YLW, "opened file");
-	print(".intel_syntax noprefix\n"
-		  ".global _start\n"
-		  "_start:\n");
+	print(".intel_syntax noprefix\n");
 	for(size_t i = 0; i < node.length; i++) {
 		LOG(PRN_YLW, "loop");
 		generate_fn_decl(*node.value[i].fn_decl_node);
@@ -113,6 +111,7 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 
 void generate_fn_decl(node_fn_decl_t node) {
 	LOG(PRN_YLW, "start");
+	print(".global %s\n", node.token.value);
 	print("%s:\n", node.token.value);
 	generate_compound_statement(*node.body);
 
