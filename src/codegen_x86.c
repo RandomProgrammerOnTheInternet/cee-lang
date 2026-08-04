@@ -113,6 +113,8 @@ void generate_fn_decl(node_fn_decl_t node) {
 	LOG(PRN_YLW, "start");
 	print(".global %s\n", node.token.value);
 	print("%s:\n", node.token.value);
+	print("\tpush rbp\n");
+	print("\tmov rbp, rsp\n");
 	generate_compound_statement(*node.body);
 
 	LOG(PRN_YLW, "end");
@@ -284,8 +286,8 @@ void generate_return(node_return_t node) {
 
 	generate_expr(*node.expr_node);	
 	mov("edi", "eax");
-	mov("rax", "60");
-	print("\tsyscall\n");
+	print("\tpop rbp\n");
+	print("\tret\n");
 
 	LOG(PRN_YLW, "end");
 }

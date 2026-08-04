@@ -48,6 +48,7 @@ node_fn_decl_t *parse_fn_decl(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
 	print_offset();
+	stack_size = 0;
 	++*i;
 	fprintf(tree, "fn: %s\n", tokens.value[*i].value);
 	if(identifier_is_fn(tokens.value[*i]) || identifier_is_var(tokens.value[*i])) {
