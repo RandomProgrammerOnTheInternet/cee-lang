@@ -5,6 +5,7 @@
 FILE *asm_file = NULL;
 static const char *expr_reg[] = {"eax", "ecx", "edx", "ebx"};
 
+static void generate_fn_decl(node_fn_decl_t node);
 static void generate_statement(node_statement_t node);
 static void generate_compound_statement(node_compound_statement_t node);
 static void generate_if(node_if_t node);
@@ -37,8 +38,8 @@ static inline char *prim_expr(node_prim_expr_t prim_expr_node) {
 		return prim_expr_node.int_lit_node->token.value;
 	}
 	else if(prim_expr_node.type == node_var) {
-		LOG(PRN_YLW, "%zu", prim_expr_node.var_node.stack_offset);
-		return var(prim_expr_node.var_node.stack_offset);
+		LOG(PRN_YLW, "%zu", prim_expr_node.obj.stack_offset);
+		return var(prim_expr_node.obj.stack_offset);
 	}
 	else {
 		LOG(PRN_YLW, "ERROR");
@@ -103,11 +104,19 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 		  "_start:\n");
 	for(size_t i = 0; i < node.length; i++) {
 		LOG(PRN_YLW, "loop");
-		generate_statement(*node.value[i].statement_node);
+		generate_fn_decl(*node.value[i].fn_decl_node);
 	}
 //	LIST_FREE(node);
 	
 	return asm_file;
+}
+
+void generate_fn_decl(node_fn_decl_t node) {
+	LOG(PRN_YLW, "start");
+	print("%s:\n", node.token.value);
+	generate_compound_statement(*node.body);
+
+	LOG(PRN_YLW, "end");
 }
 
 void generate_statement(node_statement_t node) {

@@ -29,6 +29,8 @@ typedef enum node_type : u8 {
 	node_do_while,
 	node_for,
 	node_decl_for,
+	node_fn,
+	node_fn_decl,
 } node_type;
 
 typedef enum op_type : u8 {
@@ -45,21 +47,25 @@ typedef struct node_mul_expr node_mul_expr_t;
 typedef struct node_add_expr node_add_expr_t;
 typedef struct node_equal_expr node_equal_expr_t;
 typedef struct node_assign_expr node_assign_expr_t;
+typedef struct node_compound_statement node_compound_statement_t;
+
+// functions and variables
+typedef struct obj {
+	bool is_fn;
+	token_t token;
+	size_t stack_offset;
+	node_compound_statement_t *body;
+} obj_t;
 
 typedef struct node_int_lit {
 	token_t token;
 } node_int_lit_t;
 
-typedef struct node_var {
-	token_t token;
-	size_t stack_offset;
-} node_var_t;
-
 typedef struct node_prim_expr {
 	node_type type;
 	union {
 		node_int_lit_t *int_lit_node;
-		node_var_t var_node;
+		obj_t obj;
 	};
 } node_prim_expr_t;
 
@@ -104,7 +110,7 @@ typedef struct node_assign_expr {
 	union {
 		node_equal_expr_t *equal_expr_node;
 		struct {
-			node_var_t lhs;
+			obj_t lhs;
 			node_equal_expr_t *rhs;
 		};
 	};
@@ -119,6 +125,11 @@ typedef struct node_var_decl {
 	size_t stack_offset;
 	node_expr_t *expr_node;
 } node_var_decl_t;
+
+typedef struct node_fn_decl {
+	token_t token;
+	node_compound_statement_t *body;
+} node_fn_decl_t;
 
 typedef struct node_return {
 	node_expr_t *expr_node;
@@ -178,12 +189,12 @@ typedef struct node_compound_statement {
 } node_compound_statement_t;
 
 typedef struct node_base {
-	node_statement_t *statement_node;
+	node_fn_decl_t *fn_decl_node;
 } node_base_t;
 
-NEW_LIST(node_var_t);
+NEW_LIST(obj_t);
 typedef struct scope {
-	LIST(node_var_t) vars;
+	LIST(obj_t) objs;
 } scope_t;
 
 NEW_LIST(scope_t);
@@ -195,7 +206,7 @@ extern LIST(scope_t) scopes;
 LIST(node_base_t) parse(LIST(token_t) tokens);
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
 node_return_t *parse_return(LIST(token_t) tokens, size_t *i);
-node_var_t parse_var(LIST(token_t) tokens, size_t *i);
+obj_t parse_var(LIST(token_t) tokens, size_t *i);
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i);
 node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i);
 node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i);
@@ -207,8 +218,10 @@ node_assign_expr_t *parse_assign_expr(LIST(token_t) tokens, size_t *i);
 node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i);
 node_if_t *parse_if(LIST(token_t) tokens, size_t *i);
 node_while_t *parse_while(LIST(token_t) tokens, size_t *i);
+node_fn_decl_t *parse_fn_decl(LIST(token_t) tokens, size_t *i);
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i);
 
 bool identifier_is_var(token_t token);
+bool identifier_is_fn(token_t token);
 
 #endif // PARSER_H
