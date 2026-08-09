@@ -15,6 +15,7 @@ static void generate_return(node_return_t node);
 static void generate_var_decl(node_var_decl_t node);
 static void generate_label(node_label_t node);
 static void generate_goto(node_goto_t node);
+static void generate_post_expr(char **dest, node_post_expr_t expr);
 static void generate_mul_expr(char **dest, node_mul_expr_t expr);
 static void generate_add_expr(char **dest, node_add_expr_t expr);
 static void generate_equal_expr(char **dest, node_equal_expr_t expr);
@@ -45,6 +46,10 @@ static inline char *prim_expr(node_prim_expr_t prim_expr_node) {
 		LOG(PRN_YLW, "ERROR");
 		exit(1);
 	}
+}
+
+static inline void call(char *fn) {
+	print("\tcall %s\n", fn);
 }
 
 static inline void and(char *dest, char *src) {
@@ -319,6 +324,28 @@ void generate_goto(node_goto_t node) {
 	LOG(PRN_YLW, "end");
 }
 
+void generate_post_expr(char **dest, node_post_expr_t expr) {
+	LOG(PRN_YLW, "start");
+
+	if(expr.type == node_post_expr) {
+		LOG(PRN_YLW, "expr.type == node_post_expr");
+		switch(expr.op) {
+		case op_fun:
+			LOG(PRN_YLW, "op_fun");
+			call(expr.token.value);
+			break;
+		}
+	}
+	else {
+		LOG(PRN_YLW, "expr.type == node_prim_expr");
+		mov(*dest, prim_expr(*expr.prim_expr_node));
+		goto end;
+	}
+
+end:
+	LOG(PRN_YLW, "end");
+}
+
 void generate_mul_expr(char **dest, node_mul_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
@@ -327,27 +354,50 @@ void generate_mul_expr(char **dest, node_mul_expr_t expr) {
 		generate_mul_expr(dest, *expr.lhs);
 	}
 	else {
-		LOG(PRN_YLW, "expr.type == node_prim_expr");
-		mov(*dest, prim_expr(*expr.prim_expr_node));
+		LOG(PRN_YLW, "expr.type == node_post_expr");
+		generate_post_expr(dest, *expr.post_expr_node);
 		goto end;
 	}
-
+	
+	if(expr.rhs->type == node_post_expr) {
+		LOG(PRN_YLW, "expr.rhs->type == node_post_expr");
+		generate_post_expr(next_expr_reg(dest), *expr.rhs);
+		switch(expr.op) {
+		case op_mul:
+			LOG(PRN_YLW, "op_mul with rhs");
+			imul(*dest, *next_expr_reg(dest));
+			break;
+		case op_div:
+			LOG(PRN_YLW, "op_div with rhs");
+			printf("sorry division and modulus doesnt work yet, x86 is weird\n");
+			exit(1);
+			idiv(*next_expr_reg(dest));
+			break;
+		case op_mod:
+			LOG(PRN_YLW, "op_mod with rhs");
+			printf("sorry division and modulus doesnt work yet, x86 is weird\n");
+			exit(1);
+			idiv(*next_expr_reg(dest));
+			mov(*dest, "edx");
+			break;
+		}
+	}
 	switch(expr.op) {
 	case op_mul:
 		LOG(PRN_YLW, "op_mul");
-		imul(*dest, prim_expr(*expr.rhs));
+		imul(*dest, prim_expr(*expr.rhs->prim_expr_node));
 		break;
 	case op_div:
 		LOG(PRN_YLW, "op_div");
 		printf("sorry division and modulus doesnt work yet, x86 is weird\n");
 		exit(1);
-		idiv(prim_expr(*expr.rhs));
+		idiv(prim_expr(*expr.rhs->prim_expr_node));
 		break;
 	case op_mod:
 		LOG(PRN_YLW, "op_mod");
 		printf("sorry division and modulus doesnt work yet, x86 is weird\n");
 		exit(1);
-		idiv(prim_expr(*expr.rhs));
+		idiv(prim_expr(*expr.rhs->prim_expr_node));
 		mov(*dest, "edx");
 		break;
 	}
@@ -390,11 +440,11 @@ void generate_add_expr(char **dest, node_add_expr_t expr) {
 	switch(expr.op) {
 	case op_add:
 		LOG(PRN_YLW, "op_add");
-		add(*dest, prim_expr(*expr.rhs->prim_expr_node));
+		add(*dest, prim_expr(*expr.rhs->post_expr_node->prim_expr_node));
 		break;
 	case op_sub:
 		LOG(PRN_YLW, "op_sub");
-		sub(*dest, prim_expr(*expr.rhs->prim_expr_node));
+		sub(*dest, prim_expr(*expr.rhs->post_expr_node->prim_expr_node));
 		break;
 	}
 	
@@ -437,13 +487,13 @@ void generate_equal_expr(char **dest, node_equal_expr_t expr) {
 	switch(expr.op) {
 	case op_equ:
 		LOG(PRN_YLW, "op_equ");
-		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->prim_expr_node));
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
 		sete("al");
 		movzx(*dest, "al");
 		break;
 	case op_neq:
 		LOG(PRN_YLW, "op_neq");
-		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->prim_expr_node));
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
 		setne("al");
 		movzx(*dest, "al");
 		break;

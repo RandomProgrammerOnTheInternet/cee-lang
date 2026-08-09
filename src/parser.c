@@ -131,7 +131,31 @@ obj_t parse_var(LIST(token_t) tokens, size_t *i) {
 	}
 	for(size_t j = 0; j < curr_scope.objs.length; j++) {
 		LOG(PRN_GRN, "loop: %s", curr_scope.objs.value[j].token.value);
-		if(!strcmp(tokens.value[*i].value, curr_scope.objs.value[j].token.value)) {
+		if(!strcmp(tokens.value[*i].value, curr_scope.objs.value[j].token.value) &&
+		   curr_scope.objs.value[j].is_fn == false) {
+			fprintf(tree, "obj: %s %zu\n", tokens.value[*i].value, curr_scope.objs.value[j].stack_offset);
+			tree_offset--;
+			LOG(PRN_GRN, "end");
+			return curr_scope.objs.value[j];
+		}
+	}
+	LOG(PRN_GRN, "ERROR");
+	exit(1);
+}
+
+obj_t parse_fn(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	LOG(PRN_GRN, "curr_scope->objs.length = %zu", curr_scope.objs.length);
+	if(curr_scope.objs.length == 0) {
+		printf("error no objects in the scope");
+		exit(1);
+	}
+	for(size_t j = 0; j < curr_scope.objs.length; j++) {
+		LOG(PRN_GRN, "loop: %s", curr_scope.objs.value[j].token.value);
+		if(!strcmp(tokens.value[*i].value, curr_scope.objs.value[j].token.value) &&
+		   curr_scope.objs.value[j].is_fn == true) {
 			fprintf(tree, "obj: %s %zu\n", tokens.value[*i].value, curr_scope.objs.value[j].stack_offset);
 			tree_offset--;
 			LOG(PRN_GRN, "end");
@@ -163,6 +187,16 @@ node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 				.obj = parse_var(tokens, i)
 			};
 		}
+		else if(identifier_is_fn(tokens.value[*i])) {
+			*node = (node_prim_expr_t) {
+				.type = node_fn,
+				.obj = parse_fn(tokens, i)
+			};
+		}
+		else {
+			LOG(PRN_GRN, "ERROR");
+			exit(1);
+		}
 		break;
 	default:
 		LOG(PRN_GRN, "ERROR");
@@ -186,6 +220,38 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
+node_post_expr_t *parse_post_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "post_expr\n");
+	node_post_expr_t *node = malloc(sizeof(node_post_expr_t));
+	*node = (node_post_expr_t) {
+		.type = node_prim_expr,
+		.prim_expr_node = parse_prim_expr(tokens, i)
+	};
+	while(1) {
+		++*i;
+		switch(tokens.value[*i].type) {
+		case token_op_left_paren:
+			++*i;
+			node_post_expr_t *tmp = malloc(sizeof(node_post_expr_t));
+			memcpy(tmp, node, sizeof(node_post_expr_t));
+			*node = (node_post_expr_t) {
+				.type = node_post_expr,
+				.op = op_fun,
+				.token = tokens.value[*i - 2]
+			};
+			continue;
+		}
+		--*i;
+		tree_offset--;
+		LOG(PRN_GRN, "end");
+		return node;
+	}
+}
+
+
 node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -193,8 +259,8 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 	fprintf(tree, "mul_expr\n");
 	node_mul_expr_t *node = malloc(sizeof(node_mul_expr_t));
 	*node = (node_mul_expr_t) {
-		.type = node_prim_expr,
-		.prim_expr_node = parse_prim_expr(tokens, i) 
+		.type = node_post_expr,
+		.post_expr_node = parse_post_expr(tokens, i) 
 	};
 
 	while(1) {
@@ -207,7 +273,7 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 				.type = node_mul_expr,
 				.op = op_mul,
 				.lhs = tmp,
-				.rhs = parse_prim_expr(tokens, i)
+				.rhs = parse_post_expr(tokens, i)
 			};
 			continue;
 		}
@@ -219,7 +285,7 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 				.type = node_mul_expr,
 				.op = op_div,
 				.lhs = tmp,
-				.rhs = parse_prim_expr(tokens, i)
+				.rhs = parse_post_expr(tokens, i)
 			};
 			continue;
 		}
@@ -231,7 +297,7 @@ node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 				.type = node_mul_expr,
 				.op = op_mod,
 				.lhs = tmp,
-				.rhs = parse_prim_expr(tokens, i)
+				.rhs = parse_post_expr(tokens, i)
 			};
 			continue;
 		}
@@ -399,6 +465,7 @@ node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
 		.stack_offset = stack_size,
 		.token = ident
 	};
+	LOG(PRN_GRN, "setting var_node");
 	LIST_APPEND(curr_scope.objs, var_node);
 	LOG(PRN_GRN, "var_node set");
 	
@@ -705,6 +772,15 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	case token_identifier:
 		LOG(PRN_GRN, "token_identifier: %s", tokens.value[*i].value);
 		if(identifier_is_var(tokens.value[*i])) {
+			LOG(PRN_GRN, "identifier is var");
+			*node = (node_statement_t) {
+				.type = node_expr,
+				.expr_node = parse_expr(tokens, i)
+			};
+			tree_offset--;
+			return node;
+		}
+		else if(identifier_is_fn(tokens.value[*i])) {
 			LOG(PRN_GRN, "identifier is var");
 			*node = (node_statement_t) {
 				.type = node_expr,
