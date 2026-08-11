@@ -3,7 +3,7 @@
 #define print(msg, ...) fprintf(asm_file, msg __VA_OPT__(,) __VA_ARGS__)
 
 FILE *asm_file = NULL;
-static const char *expr_reg[] = {"eax", "ecx", "edx", "ebx"};
+static const char *expr_reg[] = {"eax", "ecx", "edx", "ebx", "rsi", "rdi"};
 
 static void generate_fn_decl(node_fn_decl_t node);
 static void generate_statement(node_statement_t node);
@@ -18,6 +18,7 @@ static void generate_goto(node_goto_t node);
 static void generate_post_expr(char **dest, node_post_expr_t expr);
 static void generate_mul_expr(char **dest, node_mul_expr_t expr);
 static void generate_add_expr(char **dest, node_add_expr_t expr);
+static void generate_relat_expr(char **dest, node_relat_expr_t expr);
 static void generate_equal_expr(char **dest, node_equal_expr_t expr);
 static void generate_assign_expr(char **dest, node_assign_expr_t node);
 static void generate_expr(node_expr_t expr);
@@ -78,6 +79,22 @@ static inline void sete(char *s) {
 
 static inline void setne(char *s) {
 	print("\tsetne %s\n", s);
+}
+
+static inline void setg(char *s) {
+	print("\tsetg %s\n", s);
+}
+
+static inline void setge(char *s) {
+	print("\tsetge %s\n", s);
+}
+
+static inline void setl(char *s) {
+	print("\tsetl %s\n", s);
+}
+
+static inline void setle(char *s) {
+	print("\tsetle %s\n", s);
 }
 
 static inline void jmp(char *s) {
@@ -176,35 +193,7 @@ void generate_compound_statement(node_compound_statement_t node) {
 
 	for(size_t i = 0; i < node.statement_nodes.length; i++) {
 		LOG(PRN_YLW, "loop");
-		switch(node.statement_nodes.value[i]->type) {
-		case node_return:
-			LOG(PRN_YLW, "detected node_return");
-			generate_return(*node.statement_nodes.value[i]->return_node);
-			break;
-		case node_var_decl:
-			LOG(PRN_YLW, "detected node_var_decl");
-			generate_var_decl(*node.statement_nodes.value[i]->var_decl_node);
-			break;
-		case node_label:
-			LOG(PRN_YLW, "detected node_label");
-			generate_label(*node.statement_nodes.value[i]->label_node);
-			break;
-		case node_goto:
-			LOG(PRN_YLW, "detected node_goto");
-			generate_goto(*node.statement_nodes.value[i]->goto_node);
-			break;
-		case node_compound_statement:
-			LOG(PRN_YLW, "detected node_compound_statement");
-			generate_compound_statement(*node.statement_nodes.value[i]->compound_statement_node);
-			break;
-		case node_expr:
-			LOG(PRN_YLW, "detected node_expr");
-			generate_expr(*node.statement_nodes.value[i]->expr_node);
-			break;
-		default:
-			LOG(PRN_YLW, "default");
-			break;
-		}
+		generate_statement(*node.statement_nodes.value[i]);
 	}
 	LOG(PRN_YLW, "end");
 }
@@ -452,12 +441,12 @@ end:
 	LOG(PRN_YLW, "end");
 }
 
-void generate_equal_expr(char **dest, node_equal_expr_t expr) {
+void generate_relat_expr(char **dest, node_relat_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
-	if(expr.type == node_equal_expr) {
-		LOG(PRN_YLW, "expr.type == node_equal_expr");
-		generate_equal_expr(dest, *expr.lhs);
+	if(expr.type == node_relat_expr) {
+		LOG(PRN_YLW, "expr.type == node_relat_expr");
+		generate_relat_expr(dest, *expr.lhs);
 	}
 	else {
 		LOG(PRN_YLW, "expr.type == node_add_expr");
@@ -468,6 +457,80 @@ void generate_equal_expr(char **dest, node_equal_expr_t expr) {
 	if(expr.rhs->type == node_add_expr) {
 		LOG(PRN_YLW, "expr.rhs->type == node_add_expr");
 		generate_add_expr(next_expr_reg(dest), *expr.rhs);
+		switch(expr.op) {
+		case op_g:
+			LOG(PRN_YLW, "op_g with rhs");
+			cmp(*dest, *next_expr_reg(dest));
+			setg("al");
+			movzx(*dest, "al");
+			goto end;
+		case op_ge:
+			LOG(PRN_YLW, "op_ge with rhs");
+			cmp(*dest, *next_expr_reg(dest));
+			setge("al");
+			movzx(*dest, "al");
+			goto end;
+		case op_l:
+			LOG(PRN_YLW, "op_l with rhs");
+			cmp(*dest, *next_expr_reg(dest));
+			setl("al");
+			movzx(*dest, "al");
+			goto end;
+		case op_le:
+			LOG(PRN_YLW, "op_le with rhs");
+			cmp(*dest, *next_expr_reg(dest));
+			setle("al");
+			movzx(*dest, "al");
+			goto end;
+		}
+	}
+	switch(expr.op) {
+	case op_g:
+		LOG(PRN_YLW, "op_g");
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
+		setg("al");
+		movzx(*dest, "al");
+		goto end;
+	case op_ge:
+		LOG(PRN_YLW, "op_ge");
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
+		setge("al");
+		movzx(*dest, "al");
+		goto end;
+	case op_l:
+		LOG(PRN_YLW, "op_l");
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
+		setl("al");
+		movzx(*dest, "al");
+		goto end;
+	case op_le:
+		LOG(PRN_YLW, "op_le");
+		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
+		setle("al");
+		movzx(*dest, "al");
+		goto end;
+	}
+	
+end:
+	LOG(PRN_YLW, "end");
+}
+
+void generate_equal_expr(char **dest, node_equal_expr_t expr) {
+	LOG(PRN_YLW, "start");
+
+	if(expr.type == node_equal_expr) {
+		LOG(PRN_YLW, "expr.type == node_equal_expr");
+		generate_equal_expr(dest, *expr.lhs);
+	}
+	else {
+		LOG(PRN_YLW, "expr.type == node_relat_expr");
+		generate_relat_expr(dest, *expr.relat_expr_node);
+		goto end;
+	}
+
+	if(expr.rhs->type == node_relat_expr) {
+		LOG(PRN_YLW, "expr.rhs->type == node_relat_expr");
+		generate_relat_expr(next_expr_reg(dest), *expr.rhs);
 		switch(expr.op) {
 		case op_equ:
 			LOG(PRN_YLW, "op_equ with rhs");
@@ -487,13 +550,13 @@ void generate_equal_expr(char **dest, node_equal_expr_t expr) {
 	switch(expr.op) {
 	case op_equ:
 		LOG(PRN_YLW, "op_equ");
-		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
+		cmp(*dest, prim_expr(*expr.rhs->add_expr_node->mul_expr_node->post_expr_node->prim_expr_node));
 		sete("al");
 		movzx(*dest, "al");
 		break;
 	case op_neq:
 		LOG(PRN_YLW, "op_neq");
-		cmp(*dest, prim_expr(*expr.rhs->mul_expr_node->post_expr_node->prim_expr_node));
+		cmp(*dest, prim_expr(*expr.rhs->add_expr_node->mul_expr_node->post_expr_node->prim_expr_node));
 		setne("al");
 		movzx(*dest, "al");
 		break;

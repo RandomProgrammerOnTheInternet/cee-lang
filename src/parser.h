@@ -22,6 +22,7 @@ typedef enum node_type : u8 {
 	node_post_expr,
 	node_mul_expr,
 	node_add_expr,
+	node_relat_expr,
 	node_equal_expr,
 	node_assign_expr,
 	node_if,
@@ -33,6 +34,7 @@ typedef enum node_type : u8 {
 	node_fn,
 	node_fn_decl,
 	node_fn_call,
+	node_decl,
 } node_type;
 
 typedef enum op_type : u8 {
@@ -44,11 +46,16 @@ typedef enum op_type : u8 {
 	op_equ,
 	op_neq,
 	op_fun,
+	op_g,
+	op_ge,
+	op_l,
+	op_le,
 } op_type;
 
 typedef struct node_post_expr node_post_expr_t;
 typedef struct node_mul_expr node_mul_expr_t;
 typedef struct node_add_expr node_add_expr_t;
+typedef struct node_relat_expr node_relat_expr_t;
 typedef struct node_equal_expr node_equal_expr_t;
 typedef struct node_assign_expr node_assign_expr_t;
 typedef struct node_compound_statement node_compound_statement_t;
@@ -109,14 +116,26 @@ typedef struct node_add_expr {
 	};
 } node_add_expr_t;
 
-typedef struct node_equal_expr {
+typedef struct node_relat_expr {
 	node_type type;
 	union {
 		node_add_expr_t *add_expr_node;
 		struct {
 			op_type op;
-			node_equal_expr_t *lhs;
+			node_relat_expr_t *lhs;
 			node_add_expr_t *rhs;
+		};
+	};
+} node_relat_expr_t;
+
+typedef struct node_equal_expr {
+	node_type type;
+	union {
+		node_relat_expr_t *relat_expr_node;
+		struct {
+			op_type op;
+			node_equal_expr_t *lhs;
+			node_relat_expr_t *rhs;
 		};
 	};
 } node_equal_expr_t;
@@ -227,6 +246,7 @@ node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i);
 node_post_expr_t *parse_post_expr(LIST(token_t) tokens, size_t *i);
 node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i);
 node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i);
+node_relat_expr_t *parse_relat_expr(LIST(token_t) tokens, size_t *i);
 node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i);
 node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i);
 node_label_t *parse_label(LIST(token_t) tokens, size_t *i);

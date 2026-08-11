@@ -352,6 +352,73 @@ node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i) {
 	}
 }
 
+node_relat_expr_t *parse_relat_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "relat_expr\n");
+	node_relat_expr_t *node = malloc(sizeof(node_relat_expr_t));
+	*node = (node_relat_expr_t) {
+		.type = node_add_expr,
+		.add_expr_node = parse_add_expr(tokens, i)
+	};
+	while(1) {
+		++*i;
+		if(tokens.value[*i].type == token_op_greater_than) {
+			++*i;
+			node_relat_expr_t *tmp = malloc(sizeof(node_relat_expr_t));
+			memcpy(tmp, node, sizeof(node_relat_expr_t));
+			*node = (node_relat_expr_t) {
+				.type = node_relat_expr,
+				.op = op_g,
+				.lhs = tmp,
+				.rhs = parse_add_expr(tokens, i)
+			};
+			continue;
+		}
+		else if(tokens.value[*i].type == token_op_greater_than_equal_to) {
+			++*i;
+			node_relat_expr_t *tmp = malloc(sizeof(node_relat_expr_t));
+			memcpy(tmp, node, sizeof(node_relat_expr_t));
+			*node = (node_relat_expr_t) {
+				.type = node_relat_expr,
+				.op = op_ge,
+				.lhs = tmp,
+				.rhs = parse_add_expr(tokens, i)
+			};
+			continue;
+		}
+		else if(tokens.value[*i].type == token_op_less_than) {
+			++*i;
+			node_relat_expr_t *tmp = malloc(sizeof(node_relat_expr_t));
+			memcpy(tmp, node, sizeof(node_relat_expr_t));
+			*node = (node_relat_expr_t) {
+				.type = node_relat_expr,
+				.op = op_l,
+				.lhs = tmp,
+				.rhs = parse_add_expr(tokens, i)
+			};
+			continue;
+		}
+		else if(tokens.value[*i].type == token_op_less_than_equal_to) {
+			++*i;
+			node_relat_expr_t *tmp = malloc(sizeof(node_relat_expr_t));
+			memcpy(tmp, node, sizeof(node_relat_expr_t));
+			*node = (node_relat_expr_t) {
+				.type = node_relat_expr,
+				.op = op_le,
+				.lhs = tmp,
+				.rhs = parse_add_expr(tokens, i)
+			};
+			continue;
+		}
+		tree_offset--;
+		--*i;
+		LOG(PRN_GRN, "end");
+		return node;
+	}
+}
+
 node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -359,32 +426,32 @@ node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i) {
 	fprintf(tree, "equal_expr\n");
 	node_equal_expr_t *node = malloc(sizeof(node_equal_expr_t));
 	*node = (node_equal_expr_t) {
-		.type = node_add_expr,
-		.add_expr_node = parse_add_expr(tokens, i)
+		.type = node_relat_expr,
+		.relat_expr_node = parse_relat_expr(tokens, i)
 	};
 	while(1) {
 		++*i;
 		if(tokens.value[*i].type == token_op_equals_equals) {
 			++*i;
 			node_equal_expr_t *tmp = malloc(sizeof(node_equal_expr_t));
-			memcpy(tmp, node, sizeof(node_add_expr_t));
+			memcpy(tmp, node, sizeof(node_equal_expr_t));
 			*node = (node_equal_expr_t) {
 				.type = node_equal_expr,
 				.op = op_equ,
 				.lhs = tmp,
-				.rhs = parse_add_expr(tokens, i)
+				.rhs = parse_relat_expr(tokens, i)
 			};
 			continue;
 		}
 		else if(tokens.value[*i].type == token_op_not_equals) {
 			++*i;
 			node_equal_expr_t *tmp = malloc(sizeof(node_equal_expr_t));
-			memcpy(tmp, node, sizeof(node_add_expr_t));
+			memcpy(tmp, node, sizeof(node_equal_expr_t));
 			*node = (node_equal_expr_t) {
 				.type = node_equal_expr,
 				.op = op_neq,
 				.lhs = tmp,
-				.rhs = parse_add_expr(tokens, i)
+				.rhs = parse_relat_expr(tokens, i)
 			};
 			continue;
 		}
