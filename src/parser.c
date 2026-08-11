@@ -848,7 +848,7 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 			return node;
 		}
 		else if(identifier_is_fn(tokens.value[*i])) {
-			LOG(PRN_GRN, "identifier is var");
+			LOG(PRN_GRN, "identifier is fn");
 			*node = (node_statement_t) {
 				.type = node_expr,
 				.expr_node = parse_expr(tokens, i)
