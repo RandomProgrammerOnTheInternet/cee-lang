@@ -67,7 +67,6 @@ typedef struct obj {
 	bool is_fn;
 	token_t token;
 	size_t stack_offset;
-	node_compound_statement_t *body;
 } obj_t;
 
 typedef struct node_int_lit {

@@ -69,12 +69,10 @@ node_fn_decl_t *parse_fn_decl(LIST(token_t) tokens, size_t *i) {
 		exit(1);
 	}
 	++*i;
-	fn.body = parse_compound_statement(tokens, i);
 	LIST_APPEND(curr_scope.objs, fn);
 	node_fn_decl_t *fn_decl = malloc(sizeof(node_fn_decl_t));
 	*fn_decl = (node_fn_decl_t) {
 		.token = fn.token,
-		.body = fn.body
 	};
 
 	tree_offset--;
