@@ -3,6 +3,9 @@
 
 u64 line_number = 1;
 
+// whitespace here for lining up with lexer.h
+
+
 const char *token_table[] = {
 	"auto",
 	"break",

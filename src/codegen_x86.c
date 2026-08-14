@@ -15,6 +15,7 @@ static void generate_return(node_return_t node);
 static void generate_var_decl(node_var_decl_t node);
 static void generate_label(node_label_t node);
 static void generate_goto(node_goto_t node);
+static void generate_prim_expr(char **dest, node_prim_expr_t expr);
 static void generate_post_expr(char **dest, node_post_expr_t expr);
 static void generate_mul_expr(char **dest, node_mul_expr_t expr);
 static void generate_add_expr(char **dest, node_add_expr_t expr);
@@ -313,22 +314,56 @@ void generate_goto(node_goto_t node) {
 	LOG(PRN_YLW, "end");
 }
 
+void generate_prim_expr(char **dest, node_prim_expr_t expr) {
+	LOG(PRN_YLW, "start");
+	switch(expr.type) {
+	case node_int_lit:
+		LOG(PRN_YLW, "node_int_lit");
+		mov("eax", expr.int_lit_node->token.value);
+		break;
+	case node_var:
+		LOG(PRN_YLW, "node_var");
+		LOG(PRN_YLW, "%zu", expr.obj.stack_offset);
+		mov("eax", var(expr.obj.stack_offset));
+		break;
+	case node_fn_call:
+		LOG(PRN_YLW, "node_fn_call");
+		print("\tlea rax, [rip + %s]\n", expr.obj.token.value);
+		break;
+	}
+	LOG(PRN_YLW, "end");
+}
+
 void generate_post_expr(char **dest, node_post_expr_t expr) {
 	LOG(PRN_YLW, "start");
 
 	if(expr.type == node_post_expr) {
 		LOG(PRN_YLW, "expr.type == node_post_expr");
-		switch(expr.op) {
-		case op_fun:
-			LOG(PRN_YLW, "op_fun");
-			call(expr.token.value);
-			break;
-		}
+		generate_post_expr(dest, *expr.post_expr_node);
 	}
 	else {
 		LOG(PRN_YLW, "expr.type == node_prim_expr");
-		mov(*dest, prim_expr(*expr.prim_expr_node));
+		generate_prim_expr(dest, *expr.prim_expr_node);
 		goto end;
+	}
+	switch(expr.op) {
+	case op_fun:
+		LOG(PRN_YLW, "op_fun");
+		call("rax");
+		break;
+	case op_inc:
+		LOG(PRN_YLW, "op_inc");
+		add("eax", "1");
+		mov(var(expr.post_expr_node->prim_expr_node->obj.stack_offset), "eax");
+		break;
+	case op_dec:
+		LOG(PRN_YLW, "op_dec");
+		sub("eax", "1");
+		mov(var(expr.post_expr_node->prim_expr_node->obj.stack_offset), "eax");
+		break;
+	default:
+		LOG(PRN_YLW, "ERROR: %d", expr.op);
+		exit(1);
 	}
 
 end:

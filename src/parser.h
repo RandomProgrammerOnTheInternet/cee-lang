@@ -50,6 +50,8 @@ typedef enum op_type : u8 {
 	op_ge,
 	op_l,
 	op_le,
+	op_inc,
+	op_dec,
 } op_type;
 
 typedef struct node_post_expr node_post_expr_t;
@@ -86,7 +88,6 @@ typedef struct node_post_expr {
 		node_prim_expr_t *prim_expr_node;
 		struct {
 			op_type op;
-			token_t token;
 			node_post_expr_t *post_expr_node;
 		};
 	};

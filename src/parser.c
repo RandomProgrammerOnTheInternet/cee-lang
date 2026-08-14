@@ -189,19 +189,23 @@ node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 		}
 		else if(identifier_is_fn(tokens.value[*i])) {
 			*node = (node_prim_expr_t) {
-				.type = node_fn,
+				.type = node_fn_call,
 				.obj = parse_fn(tokens, i)
 			};
 		}
 		else {
-			LOG(PRN_GRN, "ERROR");
+			LOG(PRN_GRN, "ERROR: %s", tokens.value[*i].value);
 			exit(1);
 		}
 		break;
 	default:
-		LOG(PRN_GRN, "ERROR");
-		break;
+		for(int j = *i - 5; j <= *i + 5; j++) {
+			LOG(PRN_GRN, "%s", tokens.value[j].value);
+		}
+		LOG(PRN_GRN, "ERROR: %s", tokens.value[*i].value);
+		exit(1);
 	}
+	LOG(PRN_GRN, "%s", tokens.value[*i].value);
 	tree_offset--;
 	LOG(PRN_GRN, "end");
 	return node;
@@ -232,15 +236,42 @@ node_post_expr_t *parse_post_expr(LIST(token_t) tokens, size_t *i) {
 	};
 	while(1) {
 		++*i;
-		switch(tokens.value[*i].type) {
-		case token_op_left_paren:
+		LOG(PRN_GRN, "loop: %s", tokens.value[*i - 1].value);
+		LOG(PRN_GRN, "loop: %s", tokens.value[*i].value);
+		LOG(PRN_GRN, "loop: %s", tokens.value[*i + 1].value);
+		if(tokens.value[*i].type == token_op_left_paren) {
+			LOG(PRN_GRN, "tokens.value[*i].type == token_op_left_paren");
 			++*i;
 			node_post_expr_t *tmp = malloc(sizeof(node_post_expr_t));
 			memcpy(tmp, node, sizeof(node_post_expr_t));
 			*node = (node_post_expr_t) {
 				.type = node_post_expr,
 				.op = op_fun,
-				.token = tokens.value[*i - 2]
+				.post_expr_node = tmp
+			};
+			continue;
+		}
+		else if(tokens.value[*i].type == token_op_plus_plus) {
+			LOG(PRN_GRN, "tokens.value[*i].type == token_op_plus_plus");
+			++*i;
+			node_post_expr_t *tmp = malloc(sizeof(node_post_expr_t));
+			memcpy(tmp, node, sizeof(node_post_expr_t));
+			*node = (node_post_expr_t) {
+				.type = node_post_expr,
+				.op = op_inc,
+				.post_expr_node = tmp
+			};
+			continue;
+		}
+		else if(tokens.value[*i].type == token_op_minus_minus) {
+			LOG(PRN_GRN, "tokens.value[*i].type == token_op_minus_minus");
+			++*i;
+			node_post_expr_t *tmp = malloc(sizeof(node_post_expr_t));
+			memcpy(tmp, node, sizeof(node_post_expr_t));
+			*node = (node_post_expr_t) {
+				.type = node_post_expr,
+				.op = op_dec,
+				.post_expr_node = tmp
 			};
 			continue;
 		}
@@ -250,7 +281,6 @@ node_post_expr_t *parse_post_expr(LIST(token_t) tokens, size_t *i) {
 		return node;
 	}
 }
-
 
 node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
