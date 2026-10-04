@@ -1,4 +1,0 @@
-int a = 5 - 2;
-int b = a - 1;
-b = b - 3;
-return b;
