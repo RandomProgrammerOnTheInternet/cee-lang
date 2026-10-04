@@ -1,5 +1,18 @@
 #include "parser.h"
 
+#define peek(tok) tokens.value[*i + 1].type == tok
+
+#define expect(tok) \
+do { \
+	if(tokens.value[*i].type != tok) { \
+		LOG(PRN_GRN, "ERROR: %s", tokens.value[*i + 1].value); \
+		exit(1); \
+	} \
+	++*i; \
+} while(0);
+
+#define consume(tok) tokens.value[*i].type == tok ? ++*i : 0
+
 size_t stack_size = 0;
 LIST(scope_t) scopes;
 #define curr_scope scopes.value[scopes.length - 1]
@@ -26,10 +39,10 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 	for(size_t i = 0; i < tokens.length; i++) {
 		LOG(PRN_GRN, "loop");
 		switch(tokens.value[i].type) {
-		case token_keyword_int:
+		case token_keyword_fn:
 			LOG(PRN_GRN, "detected fn %s", tokens.value[i + 1].value);
 			LIST_APPEND(base_node, ((node_base_t) {
-				.fn_decl_node = parse_fn_decl(tokens, &i)
+				.fn_def_node = parse_fn_def(tokens, &i)
 			}));
 			LOG(PRN_GRN, "added fn");
 			break;
@@ -42,42 +55,6 @@ LIST(node_base_t) parse(LIST(token_t) tokens) {
 	fclose(tree);
 	LOG(PRN_GRN, "end");
 	return base_node;
-}
-
-node_fn_decl_t *parse_fn_decl(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	tree_offset++;
-	print_offset();
-	stack_size = 0;
-	++*i;
-	fprintf(tree, "fn: %s\n", tokens.value[*i].value);
-	if(identifier_is_fn(tokens.value[*i]) || identifier_is_var(tokens.value[*i])) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	obj_t fn;
-	fn.is_fn = true;
-	fn.token = tokens.value[*i];
-	++*i;
-	if(tokens.value[*i].type != token_op_left_paren) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	if(tokens.value[*i].type != token_op_right_paren) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	LIST_APPEND(curr_scope.objs, fn);
-	node_fn_decl_t *fn_decl = malloc(sizeof(node_fn_decl_t));
-	*fn_decl = (node_fn_decl_t) {
-		.token = fn.token,
-	};
-
-	tree_offset--;
-	LOG(PRN_GRN, "end");
-	return fn_decl;
 }
 
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i) {
@@ -98,25 +75,39 @@ node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
-node_return_t *parse_return(LIST(token_t) tokens, size_t *i) {
+node_fn_def_t *parse_fn_def(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
 	print_offset();
-	fprintf(tree, "return\n");
+	stack_size = 0;
 	++*i;
-	node_return_t *node = malloc(sizeof(node_return_t));
-	*node = (node_return_t) {
-		.expr_node = parse_expr(tokens, i)
-	};
-	++*i;
-	if(tokens.value[*i].type != token_op_semicolon) {
+	expect(token_keyword_int);
+	fprintf(tree, "fn: %s\n", tokens.value[*i].value);
+	if(identifier_is_fn(tokens.value[*i]) || identifier_is_var(tokens.value[*i])) {
 		LOG(PRN_GRN, "ERROR");
+		exit(1);
 	}
+	obj_t fn;
+	fn.is_fn = true;
+	fn.token = tokens.value[*i];
+	++*i;
+	expect(token_op_left_paren);
+	expect(token_op_right_paren);
+	expect(token_op_left_curly_brace);
+	--*i;
+	LIST_APPEND(curr_scope.objs, fn);
+	node_fn_def_t *fn_def = malloc(sizeof(node_fn_def_t));
+	*fn_def = (node_fn_def_t) {
+		.has_parameter_list = false,
+		.token = fn.token,
+		.compound_statement_node = parse_compound_statement(tokens, i)
+	};
 
 	tree_offset--;
 	LOG(PRN_GRN, "end");
-	return node;
+	return fn_def;
 }
+
 
 obj_t parse_var(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
@@ -164,6 +155,19 @@ obj_t parse_fn(LIST(token_t) tokens, size_t *i) {
 	exit(1);
 }
 
+node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "expr\n");
+	node_expr_t *node = malloc(sizeof(node_expr_t));
+	node->assign_expr_node = parse_assign_expr(tokens, i);
+
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -197,26 +201,13 @@ node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i) {
 		}
 		break;
 	default:
-		for(int j = *i - 5; j <= *i + 5; j++) {
+		for(size_t j = *i - 5; j <= *i + 5; j++) {
 			LOG(PRN_GRN, "%s", tokens.value[j].value);
 		}
 		LOG(PRN_GRN, "ERROR: %s", tokens.value[*i].value);
 		exit(1);
 	}
 	LOG(PRN_GRN, "%s", tokens.value[*i].value);
-	tree_offset--;
-	LOG(PRN_GRN, "end");
-	return node;
-}
-
-node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	tree_offset++;
-	print_offset();
-	fprintf(tree, "expr\n");
-	node_expr_t *node = malloc(sizeof(node_expr_t));
-	node->assign_expr_node = parse_assign_expr(tokens, i);
-
 	tree_offset--;
 	LOG(PRN_GRN, "end");
 	return node;
@@ -521,60 +512,6 @@ end:
 }
 
 
-node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i) {
-	LOG(PRN_GRN, "start");
-	tree_offset++;
-	print_offset();
-	if(tokens.value[*i].type != token_keyword_int) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	if(tokens.value[*i].type != token_identifier) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	token_t ident = tokens.value[*i];
-	LOG(PRN_GRN, "identifier: %s", tokens.value[*i].value);
-	++*i;
-	if(tokens.value[*i].type != token_op_equals) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	++*i;
-	if(tokens.value[*i].type != token_int_literal &&
-		tokens.value[*i].type != token_identifier) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	stack_size += sizeof(int);
-	fprintf(tree, "var_decl: %s %zu\n", ident.value, stack_size);
-	node_expr_t *expr = parse_expr(tokens, i);
-	++*i;
-	if(tokens.value[*i].type != token_op_semicolon) {
-		LOG(PRN_GRN, "ERROR");
-		exit(1);
-	}
-	obj_t var_node = (obj_t) {
-		.is_fn = false,
-		.stack_offset = stack_size,
-		.token = ident
-	};
-	LOG(PRN_GRN, "setting var_node");
-	LIST_APPEND(curr_scope.objs, var_node);
-	LOG(PRN_GRN, "var_node set");
-	
-	node_var_decl_t *decl_node = malloc(sizeof(node_var_decl_t));
-	*decl_node = (node_var_decl_t) {
-		.token = ident,
-		.expr_node = expr,
-		.stack_offset = stack_size
-	};
-
-	tree_offset--;
-	LOG(PRN_GRN, "end");
-	return decl_node;
-}
 
 node_label_t *parse_label(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
@@ -623,21 +560,50 @@ node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t
 	print_offset();
 	fprintf(tree, "compound_statement\n");
 	node_compound_statement_t *node = malloc(sizeof(node_compound_statement_t));
-	INIT_LIST(node->statement_nodes, 0);
+	INIT_LIST(node->block_item_nodes, 0);
 	scope_t scope;
 	INIT_LIST(scope.objs, curr_scope.objs.length);
 	memcpy(scope.objs.value, curr_scope.objs.value, curr_scope.objs.length * sizeof(obj_t));
 	LIST_APPEND(scopes, scope);
 
+	LOG(PRN_GRN, "%s", tokens.value[*i].value);
 	++*i;
 	while(tokens.value[*i].type != token_op_right_curly_brace) {
 		LOG(PRN_GRN, "loop %s", tokens.value[*i].value);
-		LIST_APPEND(node->statement_nodes, parse_statement(tokens, i));
+		LIST_APPEND(node->block_item_nodes, parse_block_item(tokens, i));
 		++*i;
 	}
 	LOG(PRN_GRN, "loop end");
 	LIST_ADD(scopes, -1); // remove scope
 
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
+node_block_item_t *parse_block_item(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "block_item\n");
+
+	node_block_item_t *node = malloc(sizeof(node_block_item_t));
+	LOG(PRN_GRN, "%s", tokens.value[*i].value);
+	switch(tokens.value[*i].type) {
+	case token_keyword_int:
+		*node = (node_block_item_t) {
+			.type = node_declaration,
+			.declaration_node = parse_declaration(tokens, i)
+		};
+		break;
+	default:
+		*node = (node_block_item_t) {
+			.type = node_statement,
+			.statement_node = parse_statement(tokens, i)
+		};
+		break;
+	}
+	
 	tree_offset--;
 	LOG(PRN_GRN, "end");
 	return node;
@@ -753,7 +719,7 @@ node_for_t *parse_for(LIST(token_t) tokens, size_t *i) {
 	++*i;
 	if(tokens.value[*i].type == token_keyword_int) {
 		node->type = node_decl_for;
-		node->var_decl_node = parse_var_decl(tokens, i);
+		node->declaration_node = parse_declaration(tokens, i);
 	}
 	else {
 		node->type = node_for;
@@ -785,6 +751,26 @@ node_for_t *parse_for(LIST(token_t) tokens, size_t *i) {
 	return node;
 }
 
+node_return_t *parse_return(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "return\n");
+	++*i;
+	node_return_t *node = malloc(sizeof(node_return_t));
+	*node = (node_return_t) {
+		.expr_node = parse_expr(tokens, i)
+	};
+	++*i;
+	if(tokens.value[*i].type != token_op_semicolon) {
+		LOG(PRN_GRN, "ERROR");
+	}
+
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	LOG(PRN_GRN, "start");
 	tree_offset++;
@@ -809,15 +795,6 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 		};
 		tree_offset--;
 		LOG(PRN_GRN, "end goto");
-		return node;
-	case token_keyword_int:
-		LOG(PRN_GRN, "detected keyword int");
-		*node = (node_statement_t) {
-			.type = node_var_decl,
-			.var_decl_node = parse_var_decl(tokens, i)
-		};
-		tree_offset--;
-		LOG(PRN_GRN, "end int");
 		return node;
 	case token_op_left_curly_brace:
 		LOG(PRN_GRN, "detected op_left_curly_brace");
@@ -905,9 +882,79 @@ node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i) {
 	exit(1);
 }
 
+node_declaration_t *parse_declaration(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "declaration\n");
+
+	node_declaration_t *node = malloc(sizeof(node_declaration_t));
+	expect(token_keyword_int);
+	LOG(PRN_GRN, "%s", tokens.value[*i].value);
+	if(tokens.value[*i].type != token_identifier) {
+		LOG(PRN_GRN, "tokens.value[*i].type != token_identifier");
+		*node = (node_declaration_t) {
+			.has_init_declarator = false
+		};
+	}
+	else {
+		LOG(PRN_GRN, "tokens.value[*i].type == token_identifier");
+		stack_size += 4;
+		*node = (node_declaration_t) {
+			.has_init_declarator = true,
+			.stack_offset = stack_size,
+			.init_declarator_node = parse_init_declarator(tokens, i)
+		};
+		obj_t var = (obj_t) {
+			.is_fn = false,
+			.stack_offset = stack_size,
+			.token = node->init_declarator_node->token
+		};
+		LOG(PRN_GRN, "%s", var.token.value);
+		LIST_APPEND(curr_scope.objs, var);
+	}
+	++*i;
+	if(tokens.value[*i].type != token_op_semicolon) {
+		LOG(PRN_GRN, "ERROR: %s", tokens.value[*i].value);
+	}
+
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
+node_init_declarator_t *parse_init_declarator(LIST(token_t) tokens, size_t *i) {
+	LOG(PRN_GRN, "start");
+	tree_offset++;
+	print_offset();
+	fprintf(tree, "init_declarator\n");
+
+	node_init_declarator_t *node = malloc(sizeof(node_init_declarator_t));
+	expect(token_identifier);
+	if(tokens.value[*i].type != token_op_equals) {
+		*node = (node_init_declarator_t) {
+			.has_initializer = false,
+			.token = tokens.value[*i - 1]
+		};
+	}
+	else {
+		++*i;
+		*node = (node_init_declarator_t) {
+			.has_initializer = true,
+			.token = tokens.value[*i - 2],
+			.initializer_node = parse_assign_expr(tokens, i)
+		};
+	}
+	
+	tree_offset--;
+	LOG(PRN_GRN, "end");
+	return node;
+}
+
 bool identifier_is_var(token_t token) {
 	LOG(PRN_GRN, "start");
 	for(size_t i = 0; i < curr_scope.objs.length; i++) {
+		LOG(PRN_GRN, "loop: %s", curr_scope.objs.value[i].token.value);
 		if(!strcmp(token.value, curr_scope.objs.value[i].token.value) &&
 		   curr_scope.objs.value[i].is_fn == false) {
 			LOG(PRN_GRN, "identifier %s is var", token.value);

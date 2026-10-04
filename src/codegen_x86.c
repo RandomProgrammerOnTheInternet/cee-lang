@@ -5,14 +5,15 @@
 FILE *asm_file = NULL;
 static const char *expr_reg[] = {"eax", "ecx", "edx", "ebx", "rsi", "rdi"};
 
-static void generate_fn_decl(node_fn_decl_t node);
+static void generate_fn_def(node_fn_def_t node);
 static void generate_statement(node_statement_t node);
 static void generate_compound_statement(node_compound_statement_t node);
+static void generate_block_item(node_block_item_t node);
+static void generate_declaration(node_declaration_t node);
 static void generate_if(node_if_t node);
 static void generate_while(node_while_t node);
 static void generate_for(node_for_t node);
 static void generate_return(node_return_t node);
-static void generate_var_decl(node_var_decl_t node);
 static void generate_label(node_label_t node);
 static void generate_goto(node_goto_t node);
 static void generate_prim_expr(char **dest, node_prim_expr_t expr);
@@ -125,20 +126,20 @@ FILE *generate_asm_x86(LIST(node_base_t) node) {
 	print(".intel_syntax noprefix\n");
 	for(size_t i = 0; i < node.length; i++) {
 		LOG(PRN_YLW, "loop");
-		generate_fn_decl(*node.value[i].fn_decl_node);
+		generate_fn_def(*node.value[i].fn_def_node);
 	}
 //	LIST_FREE(node);
 	
 	return asm_file;
 }
 
-void generate_fn_decl(node_fn_decl_t node) {
+void generate_fn_def(node_fn_def_t node) {
 	LOG(PRN_YLW, "start");
 	print(".global %s\n", node.token.value);
 	print("%s:\n", node.token.value);
 	print("\tpush rbp\n");
 	print("\tmov rbp, rsp\n");
-	generate_compound_statement(*node.body);
+	generate_compound_statement(*node.compound_statement_node);
 
 	LOG(PRN_YLW, "end");
 }
@@ -149,10 +150,6 @@ void generate_statement(node_statement_t node) {
 	case node_return:
 		LOG(PRN_YLW, "detected node_return");
 		generate_return(*node.return_node);
-		break;
-	case node_var_decl:
-		LOG(PRN_YLW, "detected node_var_decl");
-		generate_var_decl(*node.var_decl_node);
 		break;
 	case node_label:
 		LOG(PRN_YLW, "detected node_label");
@@ -190,15 +187,47 @@ void generate_statement(node_statement_t node) {
 
 void generate_compound_statement(node_compound_statement_t node) {
 	LOG(PRN_YLW, "start");
-	LOG(PRN_YLW, "%zu", node.statement_nodes.length);
+	LOG(PRN_YLW, "%zu", node.block_item_nodes.length);
 
-	for(size_t i = 0; i < node.statement_nodes.length; i++) {
+	for(size_t i = 0; i < node.block_item_nodes.length; i++) {
 		LOG(PRN_YLW, "loop");
-		generate_statement(*node.statement_nodes.value[i]);
+		generate_block_item(*node.block_item_nodes.value[i]);
 	}
 	LOG(PRN_YLW, "end");
 }
 
+void generate_block_item(node_block_item_t node) {
+	LOG(PRN_YLW, "start");
+
+	switch(node.type) {
+	case node_declaration:
+		generate_declaration(*node.declaration_node);
+		break;
+	case node_statement:
+		generate_statement(*node.statement_node);
+		break;
+	}
+
+	LOG(PRN_YLW, "end");
+}
+
+void generate_declaration(node_declaration_t node) {
+	LOG(PRN_YLW, "start");
+
+	if(!node.has_init_declarator) {
+		goto end;
+	}
+	if(node.init_declarator_node->has_initializer) {
+		generate_assign_expr(&expr_reg[0], *node.init_declarator_node->initializer_node);
+		mov(var(node.stack_offset), "eax");
+	}
+	else {
+		mov(var(node.stack_offset), "0");
+	}
+
+end:
+	LOG(PRN_YLW, "end");
+}
 
 void generate_if(node_if_t node) {
 	LOG(PRN_YLW, "start");
@@ -257,7 +286,7 @@ void generate_for(node_for_t node) {
 	static size_t num = 0;
 	LOG(PRN_YLW, "num = %zu", num);
 	if(node.type == node_decl_for) {
-		generate_var_decl(*node.var_decl_node);
+		generate_declaration(*node.declaration_node);
 	}
 	else {
 		generate_expr(*node.expr1);
@@ -283,15 +312,6 @@ void generate_return(node_return_t node) {
 	mov("edi", "eax");
 	print("\tpop rbp\n");
 	print("\tret\n");
-
-	LOG(PRN_YLW, "end");
-}
-
-void generate_var_decl(node_var_decl_t node) {
-	LOG(PRN_YLW, "start");
-
-	generate_expr(*node.expr_node);
-	mov(var(node.stack_offset), "eax");
 
 	LOG(PRN_YLW, "end");
 }

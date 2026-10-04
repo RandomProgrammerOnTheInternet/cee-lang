@@ -12,7 +12,6 @@ typedef enum node_type : u8 {
 	node_return,
 	node_int_lit,
 	node_var,
-	node_var_decl,
 	node_expr,
 	node_statement,
 	node_compound_statement,
@@ -31,10 +30,10 @@ typedef enum node_type : u8 {
 	node_do_while,
 	node_for,
 	node_decl_for,
-	node_fn,
-	node_fn_decl,
 	node_fn_call,
-	node_decl,
+	node_declaration,
+	node_init_declarator,
+	node_param_declaration
 } node_type;
 
 typedef enum op_type : u8 {
@@ -72,6 +71,8 @@ typedef struct obj {
 typedef struct node_int_lit {
 	token_t token;
 } node_int_lit_t;
+
+/* ===| EXPRESSIONS |=== */
 
 typedef struct node_prim_expr {
 	node_type type;
@@ -155,16 +156,36 @@ typedef struct node_expr {
 	node_assign_expr_t *assign_expr_node;
 } node_expr_t;
 
-typedef struct node_var_decl {
-	token_t token;
-	size_t stack_offset;
-	node_expr_t *expr_node;
-} node_var_decl_t;
+/* ===| DECLARATIONS |=== */
 
-typedef struct node_fn_decl {
+typedef struct node_init_declarator node_init_declarator_t;
+typedef struct node_param_declaration node_param_declaration_t;
+typedef node_param_declaration_t* node_param_decl_ptr;
+NEW_LIST(node_param_decl_ptr);
+
+typedef struct node_declaration {
+	bool has_init_declarator;
+	size_t stack_offset;
+	node_init_declarator_t *init_declarator_node;
+} node_declaration_t;
+
+typedef struct node_init_declarator {
+	bool has_initializer;
 	token_t token;
-	node_compound_statement_t *body;
-} node_fn_decl_t;
+	node_assign_expr_t *initializer_node;
+} node_init_declarator_t;
+
+typedef struct node_param_declaration {
+	token_t token;
+} node_param_declaration_t;
+
+/* ===| STATEMENTS |=== */
+
+typedef struct node_statement node_statement_t;
+typedef struct node_compound_statement node_compound_statement_t;
+typedef struct node_block_item node_block_item_t;
+typedef node_block_item_t* node_block_item_ptr;
+NEW_LIST(node_block_item_ptr);
 
 typedef struct node_return {
 	node_expr_t *expr_node;
@@ -178,7 +199,6 @@ typedef struct node_goto {
 	token_t token;
 } node_goto_t;
 
-typedef struct node_statement node_statement_t;
 typedef struct node_if {
 	node_type type;
 	node_expr_t *expr_node;
@@ -194,18 +214,16 @@ typedef struct node_while {
 
 typedef struct node_for {
 	node_type type;
-	node_var_decl_t *var_decl_node;
+	node_declaration_t *declaration_node;
 	node_expr_t *expr1;
 	node_expr_t *expr2;
 	node_expr_t *expr3;
 	node_statement_t *body;
 } node_for_t;
 
-typedef struct node_compound_statement node_compound_statement_t;
 typedef struct node_statement {
 	node_type type;
 	union {
-		node_var_decl_t *var_decl_node;
 		node_return_t *return_node;
 		node_label_t *label_node;
 		node_goto_t *goto_node;
@@ -217,14 +235,29 @@ typedef struct node_statement {
 	};
 } node_statement_t;
 
-typedef node_statement_t* node_stmt_ptr;
-NEW_LIST(node_stmt_ptr);
+typedef struct node_block_item {
+	node_type type;
+	union {
+		node_statement_t *statement_node;
+		node_declaration_t *declaration_node;
+	};
+} node_block_item_t;
+
 typedef struct node_compound_statement {
-	LIST(node_stmt_ptr) statement_nodes;
+	LIST(node_block_item_ptr) block_item_nodes;
 } node_compound_statement_t;
 
+/* ===| EXTERNAL DEFINITIONS |=== */
+
+typedef struct node_fn_def {
+	bool has_parameter_list;
+	token_t token;
+	LIST(node_param_decl_ptr) parameter_declaration_nodes;
+	node_compound_statement_t *compound_statement_node;
+} node_fn_def_t;
+
 typedef struct node_base {
-	node_fn_decl_t *fn_decl_node;
+	node_fn_def_t *fn_def_node;
 } node_base_t;
 
 NEW_LIST(obj_t);
@@ -240,22 +273,31 @@ extern LIST(scope_t) scopes;
 
 LIST(node_base_t) parse(LIST(token_t) tokens);
 node_int_lit_t *parse_int_lit(LIST(token_t) tokens, size_t *i);
-node_return_t *parse_return(LIST(token_t) tokens, size_t *i);
+node_fn_def_t *parse_fn_def(LIST(token_t) tokens, size_t *i);
 obj_t parse_var(LIST(token_t) tokens, size_t *i);
+obj_t parse_fn(LIST(token_t) tokens, size_t *i);
+
 node_expr_t *parse_expr(LIST(token_t) tokens, size_t *i);
+node_prim_expr_t *parse_prim_expr(LIST(token_t) tokens, size_t *i);
 node_post_expr_t *parse_post_expr(LIST(token_t) tokens, size_t *i);
 node_mul_expr_t *parse_mul_expr(LIST(token_t) tokens, size_t *i);
 node_add_expr_t *parse_add_expr(LIST(token_t) tokens, size_t *i);
 node_relat_expr_t *parse_relat_expr(LIST(token_t) tokens, size_t *i);
 node_equal_expr_t *parse_equal_expr(LIST(token_t) tokens, size_t *i);
-node_var_decl_t *parse_var_decl(LIST(token_t) tokens, size_t *i);
+node_assign_expr_t *parse_assign_expr(LIST(token_t) tokens, size_t *i);
+
+node_declaration_t *parse_declaration(LIST(token_t) tokens, size_t *i);
+node_init_declarator_t *parse_init_declarator(LIST(token_t) tokens, size_t *i);
+node_param_declaration_t *parse_param_declaration(LIST(token_t) tokens, size_t *i);
+
 node_label_t *parse_label(LIST(token_t) tokens, size_t *i);
 node_goto_t *parse_goto(LIST(token_t) tokens, size_t *i);
-node_assign_expr_t *parse_assign_expr(LIST(token_t) tokens, size_t *i);
 node_compound_statement_t *parse_compound_statement(LIST(token_t) tokens, size_t *i);
+node_block_item_t *parse_block_item(LIST(token_t) tokens, size_t *i);
 node_if_t *parse_if(LIST(token_t) tokens, size_t *i);
 node_while_t *parse_while(LIST(token_t) tokens, size_t *i);
-node_fn_decl_t *parse_fn_decl(LIST(token_t) tokens, size_t *i);
+node_for_t *parse_for(LIST(token_t) tokens, size_t *i);
+node_return_t *parse_return(LIST(token_t) tokens, size_t *i);
 node_statement_t *parse_statement(LIST(token_t) tokens, size_t *i);
 
 bool identifier_is_var(token_t token);

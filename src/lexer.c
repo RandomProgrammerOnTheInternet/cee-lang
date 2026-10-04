@@ -20,6 +20,7 @@ const char *token_table[] = {
 	"enum",
 	"extern",
 	"float",
+	"fn",
 	"for",
 	"goto",
 	"if",

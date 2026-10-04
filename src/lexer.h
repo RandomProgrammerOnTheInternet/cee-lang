@@ -20,6 +20,7 @@ enum token_type : u8 {
 	token_keyword_enum,
 	token_keyword_extern,
 	token_keyword_float,
+	token_keyword_fn,
 	token_keyword_for,
 	token_keyword_goto,
 	token_keyword_if,
